@@ -1,0 +1,77 @@
+<Project>
+  <!-- Imported by all executable hosts and the reliability tests. DLLs are loaded at
+       runtime, never linked to the host: deployment may omit/disable a plugin safely. -->
+  <!--
+    GetTargetPath only evaluates a DLL path: it does not build that DLL.
+    In particular, a host published with -r win-x64 can ask for an RID-specific
+    output when project references were built without that RID. Build the
+    plugin projects in the same Configuration/TargetFramework/RID first.
+
+    Plugins remain runtime-loaded, not assembly references of the host.
+    This target is for local build output (CLI, simulator, host and tests);
+    scripts/Publish-Plugin.ps1 separately publishes deployable plugin folders.
+  -->
+  <ItemGroup>
+    <_DevDeckActionPluginProject Include="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Shortcuts/chris7197.DevDeck.Shortcuts.csproj" />
+    <_DevDeckActionPluginProject Include="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Git/chris7197.DevDeck.Git.csproj" />
+    <_DevDeckActionPluginProject Include="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.VisualStudio/chris7197.DevDeck.VisualStudio.csproj" />
+    <_DevDeckActionPluginProject Include="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Teams/chris7197.DevDeck.Teams.csproj" />
+    <_DevDeckActionPluginProject Include="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Diagnostics/chris7197.DevDeck.Diagnostics.csproj" />
+    <_DevDeckActionPluginProject Include="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Investigation/chris7197.DevDeck.Investigation.csproj" />
+    <_DevDeckActionPluginProject Include="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.DbFlight/chris7197.DevDeck.DbFlight.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <_DevDeckActionPluginBuildProperties>Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework);RuntimeIdentifier=$(RuntimeIdentifier)</_DevDeckActionPluginBuildProperties>
+  </PropertyGroup>
+
+  <Target Name="CopyDevDeckActionPlugins" AfterTargets="Build"
+          Condition="'$(IsCrossTargetingBuild)' != 'true' and '$(DesignTimeBuild)' != 'true'">
+    <!-- Do not assume a GetTargetPath result exists: build the matching output first. -->
+    <MSBuild Projects="@(_DevDeckActionPluginProject)" Targets="Build"
+             Properties="$(_DevDeckActionPluginBuildProperties)" BuildInParallel="false" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Shortcuts/chris7197.DevDeck.Shortcuts.csproj" Targets="GetTargetPath" Properties="$(_DevDeckActionPluginBuildProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ShortcutsPluginAssembly" />
+    </MSBuild>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Git/chris7197.DevDeck.Git.csproj" Targets="GetTargetPath" Properties="$(_DevDeckActionPluginBuildProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_GitPluginAssembly" />
+    </MSBuild>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.VisualStudio/chris7197.DevDeck.VisualStudio.csproj" Targets="GetTargetPath" Properties="$(_DevDeckActionPluginBuildProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_VisualStudioPluginAssembly" />
+    </MSBuild>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Teams/chris7197.DevDeck.Teams.csproj" Targets="GetTargetPath" Properties="$(_DevDeckActionPluginBuildProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_TeamsPluginAssembly" />
+    </MSBuild>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Diagnostics/chris7197.DevDeck.Diagnostics.csproj" Targets="GetTargetPath" Properties="$(_DevDeckActionPluginBuildProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DiagnosticsPluginAssembly" />
+    </MSBuild>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Investigation/chris7197.DevDeck.Investigation.csproj" Targets="GetTargetPath" Properties="$(_DevDeckActionPluginBuildProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_InvestigationPluginAssembly" />
+    </MSBuild>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.DbFlight/chris7197.DevDeck.DbFlight.csproj" Targets="GetTargetPath" Properties="$(_DevDeckActionPluginBuildProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DbFlightPluginAssembly" />
+    </MSBuild>
+    <MakeDir Directories="$(TargetDir)plugins/shortcuts/;$(TargetDir)plugins/git/;$(TargetDir)plugins/visualstudio/;$(TargetDir)plugins/teams/;$(TargetDir)plugins/diagnostics/;$(TargetDir)plugins/investigation/;$(TargetDir)plugins/dbflight/" />
+    <Copy SourceFiles="@(_ShortcutsPluginAssembly)" DestinationFolder="$(TargetDir)plugins/shortcuts/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_GitPluginAssembly)" DestinationFolder="$(TargetDir)plugins/git/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_VisualStudioPluginAssembly)" DestinationFolder="$(TargetDir)plugins/visualstudio/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_TeamsPluginAssembly)" DestinationFolder="$(TargetDir)plugins/teams/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_DiagnosticsPluginAssembly)" DestinationFolder="$(TargetDir)plugins/diagnostics/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_InvestigationPluginAssembly)" DestinationFolder="$(TargetDir)plugins/investigation/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_DbFlightPluginAssembly)" DestinationFolder="$(TargetDir)plugins/dbflight/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Shortcuts/plugin.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Shortcuts/config.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Shortcuts/config.schema.json"
+          DestinationFolder="$(TargetDir)plugins/shortcuts/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Git/plugin.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Git/config.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Git/config.schema.json"
+          DestinationFolder="$(TargetDir)plugins/git/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.VisualStudio/plugin.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.VisualStudio/config.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.VisualStudio/config.schema.json"
+          DestinationFolder="$(TargetDir)plugins/visualstudio/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Teams/plugin.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Teams/config.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Teams/config.schema.json"
+          DestinationFolder="$(TargetDir)plugins/teams/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Diagnostics/plugin.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Diagnostics/config.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Diagnostics/config.schema.json"
+          DestinationFolder="$(TargetDir)plugins/diagnostics/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Investigation/plugin.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Investigation/config.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.Investigation/config.schema.json"
+          DestinationFolder="$(TargetDir)plugins/investigation/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.DbFlight/plugin.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.DbFlight/config.json;$(MSBuildThisFileDirectory)../src/chris7197.DevDeck.DbFlight/config.schema.json"
+          DestinationFolder="$(TargetDir)plugins/dbflight/" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

@@ -1,0 +1,637 @@
+{
+  "Actions": [
+    {
+      "UUID": "com.chris7197.devdeck.syncmain",
+      "Icon": "images/sync-main-action.png",
+      "Name": "Sync Main",
+      "Tooltip": "Commit as Pre merge, fetch origin/main, merge into current Visual Studio branch",
+      "States": [
+        {
+          "Image": "images/sync-main-key.png",
+          "Title": "Sync\nMain",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.latesterrorlog",
+      "Icon": "images/latest-log-action.png",
+      "Name": "Open Latest Error Log",
+      "Tooltip": "Open the most recently modified file from the log directory configured for the current Visual Studio solution",
+      "States": [
+        {
+          "Image": "images/latest-log-key.png",
+          "Title": "Latest\nLog",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.lasterror",
+      "Icon": "images/last-error-action.png",
+      "Name": "Open Last Error",
+      "Tooltip": "Open the latest error source/line in Visual Studio; fallback to log",
+      "States": [
+        {
+          "Image": "images/last-error-key.png",
+          "Title": "Last\nError",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.newmigration",
+      "Icon": "images/new-migration-action.png",
+      "Name": "New FluentMigrator Migration",
+      "Tooltip": "Create and open a timestamped Migrator.cs in the active solution migrator project",
+      "States": [
+        {
+          "Image": "images/new-migration-key.png",
+          "Title": "New\nMigration",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot01",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 01",
+      "Tooltip": "Dynamic slot 01: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 01",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot02",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 02",
+      "Tooltip": "Dynamic slot 02: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 02",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot03",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 03",
+      "Tooltip": "Dynamic slot 03: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 03",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot04",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 04",
+      "Tooltip": "Dynamic slot 04: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 04",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot05",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 05",
+      "Tooltip": "Dynamic slot 05: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 05",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot06",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 06",
+      "Tooltip": "Dynamic slot 06: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 06",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot07",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 07",
+      "Tooltip": "Dynamic slot 07: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 07",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot08",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 08",
+      "Tooltip": "Dynamic slot 08: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 08",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot09",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 09",
+      "Tooltip": "Dynamic slot 09: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 09",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot10",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 10",
+      "Tooltip": "Dynamic slot 10: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 10",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot11",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 11",
+      "Tooltip": "Dynamic slot 11: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 11",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot12",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 12",
+      "Tooltip": "Dynamic slot 12: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 12",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot13",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 13",
+      "Tooltip": "Dynamic slot 13: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 13",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot14",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 14",
+      "Tooltip": "Dynamic slot 14: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 14",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.slot15",
+      "Icon": "images/action.png",
+      "Name": "Profile Slot 15",
+      "Tooltip": "Dynamic slot 15: switches its display and action with foreground application profile",
+      "States": [
+        {
+          "Image": "images/key.png",
+          "Title": "Slot 15",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.teamschannel",
+      "Icon": "images/teams-channel-action.png",
+      "Name": "Teams Channel",
+      "Tooltip": "Locally tracked new messages and latest poster initials from a configured Teams channel",
+      "States": [
+        {
+          "Image": "images/teams-channel-key.png",
+          "Title": "Teams",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "PropertyInspectorPath": "property-inspector.html",
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.openvscode",
+      "Icon": "images/open-vscode-action.png",
+      "Name": "Open in VS Code",
+      "Tooltip": "Open current Visual Studio solution directory in VS Code and optionally focus Copilot Chat",
+      "States": [
+        {
+          "Image": "images/open-vscode-key.png",
+          "Title": "VS Code",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "PropertyInspectorPath": "property-inspector.html",
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.opensolution",
+      "Icon": "images/open-solution-action.png",
+      "Name": "Open Solution",
+      "Tooltip": "Open a configured .sln/.slnx or focus its existing Visual Studio instance",
+      "States": [
+        {
+          "Image": "images/open-solution-key.png",
+          "Title": "Solution",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "PropertyInspectorPath": "property-inspector.html",
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.investigate",
+      "Icon": "images/investigate-action.png",
+      "Name": "Smart Investigate",
+      "Tooltip": "Reads clipboard on press; makes local source/Git/exception investigation report",
+      "States": [
+        {
+          "Image": "images/investigate-key.png",
+          "Title": "Smart Investigate",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.dbflight",
+      "Icon": "images/db-flight-action.png",
+      "Name": "DB Flight Recorder",
+      "Tooltip": "Capture read-only SQL Server DMVs to local diagnostic report for a configured server",
+      "States": [
+        {
+          "Image": "images/db-flight-key.png",
+          "Title": "DB Flight Recorder",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+      "UUID": "com.chris7197.devdeck.closeothers",
+      "Icon": "images/close-others-action.png",
+      "Name": "Close Other Tabs (VS / SSMS)",
+      "Tooltip": "Keep the active document and close other tabs in foreground Visual Studio (native COM) or SSMS (Ctrl+Alt+Shift+W; configure in SSMS).",
+      "States": [
+        {
+          "Image": "images/close-others-key.png",
+          "Title": "Close\nOthers",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.csharpier.format",
+      "Icon": "images/format-csharp-action.png",
+      "Name": "Format Active C# File",
+      "Tooltip": "Format the current saved Visual Studio .cs file using installed CSharpier and the bundled PowerShell script.",
+      "States": [
+        {
+          "Image": "images/format-csharp-key.png",
+          "Title": "Format\nC#",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.sql.format",
+      "Icon": "images/format-sql-action.png",
+      "Name": "Format SQL (chris7197)",
+      "Tooltip": "Restyle SQL in active SSMS/Visual Studio SQL editor or format the clipboard. ScriptDom parser validation; optional dbo schema removal.",
+      "States": [
+        {
+          "Image": "images/format-sql-key.png",
+          "Title": "Format\nSQL",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "property-inspector.html"
+    }
+  ],
+  "Version": "1.7.0",
+  "Name": "chris7197 DevDeck",
+  "Icon": "images/plugin.png",
+  "CategoryIcon": "images/category.png",
+  "Category": "chris7197 DevDeck",
+  "Description": "Context-aware .NET developer actions, including per-key Teams channels and solution shortcuts.",
+  "CodePath": "chris7197.DevDeck.Plugin.exe",
+  "SDKVersion": 1,
+  "Author": "chris7197",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.10.179.426"
+  }
+}

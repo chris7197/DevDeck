@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "Enabled": {
+      "type": "boolean",
+      "label": "Enabled",
+      "description": "Requires a Stream Dock host restart to apply."
+    },
+    "FocusVsCodeChat": {
+      "type": "boolean",
+      "nullable": true,
+      "label": "Focus VS Code chat"
+    }
+  }
+}

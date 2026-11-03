@@ -1,0 +1,98 @@
+{
+  "Remote": "origin",
+  "MainBranch": "main",
+  "CommitMessage": "Pre merge",
+  "SaveAllBeforeCommit": true,
+  "GitCommandTimeoutSeconds": 180,
+  "LogFilePattern": "*",
+  "LastErrorMaxReadBytes": 4194304,
+  "LastErrorSearchFileCount": 10,
+  "LiveRefreshSeconds": 10,
+  "RememberLastApplicationProfile": true,
+  "ProfileRules": [
+    {
+      "Profile": "VisualStudio",
+      "Process": "devenv"
+    },
+    {
+      "Profile": "SqlServer",
+      "Process": "ssms"
+    },
+    {
+      "Profile": "BrowserBi",
+      "Process": "msedge",
+      "TitleContains": "Dashboard"
+    },
+    {
+      "Profile": "BrowserBi",
+      "Process": "chrome",
+      "TitleContains": "Dashboard"
+    }
+  ],
+  "Profiles": {
+    "Default": [],
+    "VisualStudio": [
+      "com.chris7197.devdeck.syncmain",
+      "com.chris7197.devdeck.latesterrorlog",
+      "com.chris7197.devdeck.lasterror",
+      "com.chris7197.devdeck.newmigration",
+      "com.chris7197.devdeck.openvscode",
+      "com.chris7197.devdeck.teamschannel",
+      "com.chris7197.devdeck.teamschannel",
+      "com.chris7197.devdeck.opensolution",
+      "com.chris7197.devdeck.opensolution",
+      "com.chris7197.devdeck.investigate",
+      "com.chris7197.devdeck.dbflight",
+      "com.chris7197.devdeck.closeothers",
+      "com.chris7197.devdeck.csharpier.format",
+      "com.chris7197.devdeck.sql.format"
+    ],
+    "SqlServer": [
+      "com.chris7197.devdeck.ssms.newquery",
+      "com.chris7197.devdeck.ssms.execute",
+      "com.chris7197.devdeck.ssms.plan",
+      "com.chris7197.devdeck.dbflight",
+      "com.chris7197.devdeck.investigate",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "com.chris7197.devdeck.closeothers",
+      "com.chris7197.devdeck.sql.format"
+    ],
+    "BrowserBi": [
+      "com.chris7197.devdeck.browser.refresh",
+      "com.chris7197.devdeck.browser.devtools",
+      "com.chris7197.devdeck.browser.hardrefresh"
+    ]
+  },
+  "Teams": {
+    "TenantId": "",
+    "ClientId": "",
+    "PollSeconds": 60
+  },
+  "FocusVsCodeChat": true,
+  "ButtonPresets": {},
+  "DbFlightRecorderTargets": [],
+  "DbFlightRecorderConfigMappings": [],
+  "SmartInvestigateAmbiguousCodePattern": "^\\d{6}$",
+  "ReportRetentionDays": 30,
+  "MaxReportsPerKind": 200,
+  "MaxConcurrentActions": 3,
+  "SqlFormatting": {
+    "RemoveDboPrefixes": true
+  },
+  "MigrationTargets": [],
+  "LogMappings": [
+    {
+      "PathFilter": "*DevDeck.LogFixture.sln",
+      "RelativePath": "Logs"
+    },
+    {
+      "PathFilter": "*DevDeck.CsvFixture.sln",
+      "RelativePath": "logs/live/error-log.csv"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "fields": {
+    "Enabled": {
+      "type": "boolean",
+      "label": "Enabled",
+      "description": "Requires a Stream Dock host restart to apply."
+    },
+    "TenantId": {
+      "type": "string",
+      "nullable": true,
+      "label": "Tenant ID"
+    },
+    "ClientId": {
+      "type": "string",
+      "nullable": true,
+      "label": "Client ID"
+    },
+    "PollSeconds": {
+      "type": "integer",
+      "nullable": true,
+      "minimum": 15,
+      "maximum": 3600,
+      "label": "Polling interval (seconds)"
+    }
+  }
+}

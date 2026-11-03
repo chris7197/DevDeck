@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../chris7197.DevDeck.Core/chris7197.DevDeck.Core.csproj" />
+    <None Include="../../plugin/settings.json" Link="settings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../plugin/settings.local.json" Link="settings.local.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('../../plugin/settings.local.json')" />
+  </ItemGroup>
+</Project>

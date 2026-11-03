@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "Enabled": {
+      "type": "boolean",
+      "label": "Enabled",
+      "description": "Requires a Stream Dock host restart to apply."
+    },
+    "Actions": {
+      "type": "array",
+      "label": "Shortcut actions",
+      "description": "JSON list of keys, labels, shortcut strings and required profiles."
+    }
+  }
+}

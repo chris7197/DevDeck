@@ -1,0 +1,40 @@
+{
+  "ProfileRules": [
+    {
+      "Profile": "VisualStudio",
+      "Process": "devenv"
+    },
+    {
+      "Profile": "SqlServer",
+      "Process": "ssms"
+    },
+    {
+      "Profile": "BrowserBi",
+      "Process": "chrome",
+      "TitleContains": "My Dashboard"
+    }
+  ],
+  "LogMappings": [
+    {
+      "PathFilter": "*MySolution.sln",
+      "RelativePath": "logs/application.log"
+    }
+  ],
+  "MigrationTargets": [
+    {
+      "PathFilter": "*MySolution.sln",
+      "ProjectPath": "src/MyMigrator/MyMigrator.csproj",
+      "RelativeMigratorFolder": "Migrations"
+    }
+  ],
+  "DbFlightRecorderConfigMappings": [
+    {
+      "PathFilter": "*MySolution.sln",
+      "ConfigPath": "appsettings.json",
+      "ConnectionStringName": "DefaultConnection"
+    }
+  ],
+  "InvestigationSqlLookups": {
+    "ProductCode": "SELECT TOP (100) * FROM dbo.ExampleProducts WHERE ProductCode = '{code}';"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "Enabled": true,
+  "Remote": null,
+  "MainBranch": null,
+  "CommitMessage": null,
+  "CommandTimeoutSeconds": null,
+  "SaveAllBeforeCommit": null
+}

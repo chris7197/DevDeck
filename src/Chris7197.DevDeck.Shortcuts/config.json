@@ -1,0 +1,47 @@
+{
+  "Enabled": true,
+  "Actions": [
+    {
+      "Id": "com.chris7197.devdeck.ssms.newquery",
+      "Name": "New Query",
+      "Shortcut": "CTRL+N",
+      "IconName": "sql-newquery",
+      "RequiredProfile": "SqlServer"
+    },
+    {
+      "Id": "com.chris7197.devdeck.ssms.execute",
+      "Name": "Execute SQL",
+      "Shortcut": "F5",
+      "IconName": "sql-execute",
+      "RequiredProfile": "SqlServer"
+    },
+    {
+      "Id": "com.chris7197.devdeck.ssms.plan",
+      "Name": "Actual Plan",
+      "Shortcut": "CTRL+M",
+      "IconName": "sql-plan",
+      "RequiredProfile": "SqlServer"
+    },
+    {
+      "Id": "com.chris7197.devdeck.browser.refresh",
+      "Name": "Refresh BI",
+      "Shortcut": "CTRL+R",
+      "IconName": "browser-refresh",
+      "RequiredProfile": "BrowserBi"
+    },
+    {
+      "Id": "com.chris7197.devdeck.browser.devtools",
+      "Name": "DevTools",
+      "Shortcut": "F12",
+      "IconName": "browser-devtools",
+      "RequiredProfile": "BrowserBi"
+    },
+    {
+      "Id": "com.chris7197.devdeck.browser.hardrefresh",
+      "Name": "Hard Reload",
+      "Shortcut": "CTRL+SHIFT+R",
+      "IconName": "browser-hardrefresh",
+      "RequiredProfile": "BrowserBi"
+    }
+  ]
+}

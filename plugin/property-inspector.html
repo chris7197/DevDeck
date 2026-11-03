@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Segoe UI, sans-serif; font-size: 12px; color: #e8e8e8; background: #292929; padding: 10px; }
+label { display:block; margin: 10px 0 4px; } input { width: 100%; box-sizing: border-box; padding: 6px; background: #181818; border: 1px solid #777; border-radius: 3px; color: white; }
+small { color: #bbb; display:block; margin: 8px 0; line-height: 1.5; }
+fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:auto; }
+</style>
+</head>
+<body>
+<label for="Label">Button label (optional)</label><input id="Label" placeholder="Engineering / Example">
+<div id="teams" class="hidden">
+  <label for="TeamId">Team ID (GUID)</label><input id="TeamId" placeholder="Team ID from Teams channel link">
+  <label for="ChannelId">Channel ID</label><input id="ChannelId" placeholder="19:...@thread.tacv2">
+  <label for="ChannelUrl">Channel link (optional)</label><input id="ChannelUrl" placeholder="https://teams.microsoft.com/…">
+  <small>Each key remembers its own settings. The badge counts messages since the key's last acknowledgement, NOT the Teams app's unread badge. Run CLI --teams-login once on this Windows account.</small>
+</div>
+<div id="solution" class="hidden">
+  <label for="SolutionPath">Full path to .sln/.slnx</label><input id="SolutionPath" placeholder="C:\Projects\Example\Example.sln">
+  <small>If already open, DevDeck focuses that Visual Studio window. Otherwise it launches the solution.</small>
+</div>
+<div id="investigate" class="hidden">
+  <small>Smart Investigate reads the clipboard only when pressed. It searches the active/last Visual Studio solution locally. It never posts clipboard text to the cloud.</small>
+</div>
+<div id="dbflight" class="hidden">
+  <label for="DbTarget">DB Flight target name (optional override)</label><input id="DbTarget" placeholder="Leave blank to use active solution">
+  <small>Leave blank to resolve the active/last Visual Studio solution using DbFlightRecorderConfigMappings in settings.json. Set a name to override with an existing DbFlightRecorderTargets entry. Connection-string passwords are never displayed.</small>
+</div>
+<div id="vscode" class="hidden">
+  <label><input id="FocusChat" class="checkbox" type="checkbox"> Focus Copilot Chat (Ctrl+Alt+I)</label>
+  <small>Opens the active Visual Studio solution directory in VS Code. The chat shortcut is sent only if VS Code becomes foreground.</small>
+</div>
+<div id="sql" class="hidden">
+  <label for="SqlRemoveDboPrefixes">Remove dbo. qualification</label>
+  <select id="SqlRemoveDboPrefixes" style="width:100%;background:#181818;color:white;padding:6px">
+    <option value="">Use global SQL formatting setting</option>
+    <option value="true">Yes (for this key)</option>
+    <option value="false">No (for this key)</option>
+  </select>
+  <small>Removing dbo. from object references is not whitespace-only formatting; it can change how SQL Server resolves names.</small>
+</div>
+<div id="slot" class="hidden">
+  <small>Profile slots change behaviour with the focused application. Set the slot's channel or solution overrides here, or use ButtonPresets in plugin/settings.json for profile-specific defaults.</small>
+</div>
+<small id="status">Connecting to Stream Dock...</small>
+<script>
+(function () {
+  let ws = null, context = '', action = '', saved = {}, timer = 0;
+  const fields = ['Label','TeamId','ChannelId','ChannelUrl','SolutionPath','DbTarget'];
+  const get = id => document.getElementById(id);
+  function refresh() {
+    fields.forEach(id => { const field=get(id); if(field) field.value = saved[id] || ''; });
+    get('FocusChat').checked = saved.FocusChat !== false;
+    get('SqlRemoveDboPrefixes').value = saved.SqlRemoveDboPrefixes === undefined ? '' : String(saved.SqlRemoveDboPrefixes);
+  }
+  function save() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    fields.forEach(id => {
+      const element=get(id);
+      if (element) saved[id] = element.value.trim();
+    });
+    saved.FocusChat = get('FocusChat').checked;
+    const stripDbo = get('SqlRemoveDboPrefixes').value;
+    if (stripDbo === '') delete saved.SqlRemoveDboPrefixes;
+    else saved.SqlRemoveDboPrefixes = stripDbo === 'true';
+    ws.send(JSON.stringify({event:'setSettings',context,payload:saved}));
+    get('status').textContent = 'Saved to this key';
+  }
+  window.connectElgatoStreamDeckSocket = function(port, uuid, registerEvent, info, actionInfo) {
+    context=uuid;
+    try {
+      const details = JSON.parse(actionInfo);
+      action=details.action || '';
+      saved=details.payload?.settings || {};
+    } catch (_) { saved={}; }
+    const target = action.endsWith('teamschannel') ? 'teams' :
+        action.endsWith('opensolution') ? 'solution' :
+        action.endsWith('openvscode') ? 'vscode' : action.endsWith('sql.format') ? 'sql' : action.endsWith('dbflight') ? 'dbflight' : action.endsWith('investigate') ? 'investigate' : 'slot';
+    get(target).classList.remove('hidden');
+    // Slot actions can use either Teams or Solution fields if desired.
+    if(target==='slot') { get('teams').classList.remove('hidden'); get('solution').classList.remove('hidden'); get('vscode').classList.remove('hidden'); get('dbflight').classList.remove('hidden'); get('sql').classList.remove('hidden'); }
+    refresh();
+    ws=new WebSocket('ws://127.0.0.1:'+port);
+    ws.onopen=() => { ws.send(JSON.stringify({event:registerEvent,uuid})); get('status').textContent='Ready'; };
+    ws.onmessage=evt => {
+      try { const m=JSON.parse(evt.data); if(m.event==='didReceiveSettings' && m.payload?.settings) { saved=m.payload.settings; refresh(); } }
+      catch (_) {}
+    };
+    document.querySelectorAll('input, select').forEach(field => field.addEventListener('input', () => { clearTimeout(timer); timer=setTimeout(save,500); }));
+  };
+})();
+</script>
+</body></html>

@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="src/Chris7197.DevDeck.Cli/Chris7197.DevDeck.Cli.csproj" />
+  <Project Path="src/Chris7197.DevDeck.Core/Chris7197.DevDeck.Core.csproj" />
+  <Project Path="src/Chris7197.DevDeck.Overlay/Chris7197.DevDeck.Overlay.csproj" />
+  <Project Path="src/Chris7197.DevDeck.Plugin/Chris7197.DevDeck.Plugin.csproj" />
+  <Project Path="src/Chris7197.DevDeck.Simulator/Chris7197.DevDeck.Simulator.csproj" />
+  <Project Path="src/Chris7197.DevDeck.Tray/Chris7197.DevDeck.Tray.csproj" />
+  <Project Path="tests/Chris7197.DevDeck.ReliabilityTests/Chris7197.DevDeck.ReliabilityTests.csproj" />
+</Solution>

@@ -55,3 +55,36 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Config
+settings.development.json
+
+# Distribution
+dist/
+
+# Local developer and project overrides (never commit)
+**/settings.local.json
+**/settings.development.json
+**/settings.private.json
+**/config.local.json
+*.user
+*.suo
+.vs/
+
+# Installed/build packages can contain local overrides
+*.sdPlugin/
+.private-source-markers.txt
+
+# Database exports, credentials and investigation captures
+*.sqlplan
+*.sqlplan.xml
+*.bak
+*.bacpac
+*.mdf
+*.ldf
+*.pfx
+*.p12
+*.pem
+*.key
+captures/
+reports/

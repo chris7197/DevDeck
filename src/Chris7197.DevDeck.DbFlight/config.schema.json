@@ -1,0 +1,21 @@
+{
+  "fields": {
+    "Enabled": {
+      "type": "boolean",
+      "label": "Enabled",
+      "description": "Requires a Stream Dock host restart to apply."
+    },
+    "Targets": {
+      "type": "array",
+      "nullable": true,
+      "label": "Named database targets",
+      "description": "JSON array of database target objects. Null inherits settings.json."
+    },
+    "ConfigMappings": {
+      "type": "array",
+      "nullable": true,
+      "label": "Configuration mappings",
+      "description": "JSON array of mappings. Null inherits settings.json."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "fields": {
+    "Enabled": {
+      "type": "boolean",
+      "label": "Enabled",
+      "description": "Requires a Stream Dock host restart to apply."
+    },
+    "AmbiguousCodePattern": {
+      "type": "string",
+      "nullable": true,
+      "label": "Ambiguous-code regex",
+      "format": "regex"
+    }
+  }
+}

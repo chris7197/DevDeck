@@ -1,0 +1,37 @@
+{
+  "fields": {
+    "Enabled": {
+      "type": "boolean",
+      "label": "Enabled",
+      "description": "Requires a Stream Dock host restart to apply."
+    },
+    "Remote": {
+      "type": "string",
+      "nullable": true,
+      "label": "Git remote",
+      "description": "Leave blank/inherit to use settings.json."
+    },
+    "MainBranch": {
+      "type": "string",
+      "nullable": true,
+      "label": "Main branch"
+    },
+    "CommitMessage": {
+      "type": "string",
+      "nullable": true,
+      "label": "Commit message"
+    },
+    "CommandTimeoutSeconds": {
+      "type": "integer",
+      "nullable": true,
+      "minimum": 10,
+      "maximum": 3600,
+      "label": "Command timeout (seconds)"
+    },
+    "SaveAllBeforeCommit": {
+      "type": "boolean",
+      "nullable": true,
+      "label": "Save all before commit"
+    }
+  }
+}
