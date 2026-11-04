@@ -36,6 +36,29 @@ Check("Basic JOIN formatting and identifier casing", () =>
         !result.Contains("x.ID", StringComparison.Ordinal)) throw new Exception(result);
 });
 
+Check("House style: CTE, CASE, GROUP BY and join predicates", () =>
+{
+    const string sql = @"WITH AggregatedData AS (
+SELECT CASE WHEN x.DeliverySuffix = 0 THEN 1 ELSE x.DeliverySuffix END AS DeliverySuffix,
+       x.OrderNumber, COUNT(*) AS PackCount
+FROM dbo.Packs x
+GROUP BY x.OrderNumber, CASE WHEN x.DeliverySuffix = 0 THEN 1 ELSE x.DeliverySuffix END
+)
+SELECT tdl.OrderNumber, ad.PackCount
+FROM dbo.TripDetailsLogistics tdl
+LEFT OUTER JOIN AggregatedData ad ON tdl.OrderNumber = ad.OrderNumber AND tdl.DeliveryNoteNumber = ad.DeliverySuffix;";
+    string formatted = formatter.Format(sql).Replace("\r\n", "\n", StringComparison.Ordinal);
+    if (!formatted.Contains("AggregatedData AS (\n", StringComparison.Ordinal) ||
+        !formatted.Contains("\n)\nSELECT", StringComparison.Ordinal) ||
+        !formatted.Contains("GROUP BY\n", StringComparison.Ordinal) ||
+        !formatted.Contains("x.OrderNumber,\n", StringComparison.Ordinal) ||
+        !formatted.Contains("CASE\n", StringComparison.Ordinal) ||
+        !formatted.Contains("LEFT OUTER JOIN\n", StringComparison.Ordinal) ||
+        !formatted.Contains(" ad ON\n", StringComparison.Ordinal) ||
+        !formatted.Contains("tdl.OrderNumber = ad.OrderNumber AND\n", StringComparison.Ordinal))
+        throw new Exception(formatted);
+});
+
 Check("String and comment containing dbo are never rewritten", () =>
 {
     string result = formatter.Format("SELECT 'dbo.Foo' AS Literal -- dbo.Foo\nFROM dbo.Foo f;");
