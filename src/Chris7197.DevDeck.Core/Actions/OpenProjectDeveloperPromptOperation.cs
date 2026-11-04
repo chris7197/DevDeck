@@ -69,7 +69,12 @@ public sealed class OpenProjectDeveloperPromptOperation(VisualStudioComDispatche
 
                 string projectName = (string)project.Name;
                 string directory = Path.GetDirectoryName(Path.GetFullPath(projectFile))!;
-                dynamic explorer = dte.ToolWindows.SolutionExplorer;
+                // DTE objects obtained from the Running Object Table are exposed as COM
+                // automation objects. ToolWindows is DTE2-only and is not always
+                // late-bound; the standard DTE Windows collection is supported here.
+                // Solution Explorer's well-known window GUID (vsWindowKindSolutionExplorer).
+                dynamic explorerWindow = dte.Windows.Item("{3AE79031-E1BC-11D0-8F78-00A0C9110057}");
+                dynamic explorer = explorerWindow.Object;
                 dynamic? node = FindProjectNode(explorer.UIHierarchyItems, projectFile, depth: 0);
                 if (node is null)
                     throw new InvalidOperationException(
@@ -77,6 +82,7 @@ public sealed class OpenProjectDeveloperPromptOperation(VisualStudioComDispatche
 
                 // A contextual command must be invoked on the project node; opening
                 // View.Terminal alone starts at the solution root, not this directory.
+                explorerWindow.Activate();
                 node.Select(1); // EnvDTE.vsUISelectionType.vsUISelectionTypeSelect
                 string? command = FindProjectTerminalCommand(dte);
                 if (command is null)
