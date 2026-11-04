@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.CSharp.RuntimeBinder;
@@ -14,7 +15,8 @@ public sealed class FormatSqlOperation(
     IVisualStudioSolutionDiscovery visualStudio,
     VisualStudioComDispatcher dispatcher,
     chris7197SqlFormatter formatter,
-    DeckSettings settings) : IDevDeckOperation
+    DeckSettings settings,
+    DeckLog log) : IDevDeckOperation
 {
     public const string ActionId = "com.chris7197.devdeck.sql.format";
     public string Name => "Format SQL";
@@ -46,21 +48,35 @@ public sealed class FormatSqlOperation(
     public async Task<DevDeckOperationResult> ExecuteAsync(DevDeckOperationContext context)
     {
         bool stripDbo = context.ActionSettings?.SqlRemoveDboPrefixes ?? settings.SqlFormatting.RemoveDboPrefixes;
+        string traceId = Guid.NewGuid().ToString("N")[..8];
+        string app = ForegroundApp();
+        var clock = Stopwatch.StartNew();
+        log.WriteTrace($"SQL[{traceId}] Start target={app}, removeDboPrefixes={stripDbo}.");
         try
         {
-            switch (ForegroundApp())
+            DevDeckOperationResult result = app switch
             {
-                case "devenv":
-                    return await FormatVisualStudioAsync(context, stripDbo);
-                case "ssms":
-                    return await SsmsSqlEditorFormatter.FormatAsync(formatter, stripDbo, context.CancellationToken);
-                default:
-                    return await FormatClipboardAsync(stripDbo, context.CancellationToken);
-            }
+                "devenv" => await FormatVisualStudioAsync(context, stripDbo),
+                "ssms" => await SsmsSqlEditorFormatter.FormatAsync(formatter, stripDbo,
+                    context.CancellationToken, log, traceId),
+                _ => await FormatClipboardAsync(stripDbo, context.CancellationToken)
+            };
+            log.WriteTrace($"SQL[{traceId}] Finished success={result.Success}, cancelled={result.Cancelled}, " +
+                $"durationMs={clock.ElapsedMilliseconds}.");
+            return result;
         }
-        catch (SqlFormattingException ex) { return new(false, ex.Message); }
+        catch (SqlFormattingException ex)
+        {
+            log.WriteTrace($"SQL[{traceId}] Formatting rejected: {ex.GetType().Name}; " +
+                $"durationMs={clock.ElapsedMilliseconds}.");
+            return new(false, ex.Message);
+        }
         catch (Exception ex) when (ex is COMException or RuntimeBinderException or ExternalException)
-        { return new(false, $"Editor automation failed: {ex.Message}"); }
+        {
+            log.WriteTrace($"SQL[{traceId}] Editor automation failed: {ex.GetType().Name}; " +
+                $"durationMs={clock.ElapsedMilliseconds}.");
+            return new(false, $"Editor automation failed: {ex.Message}");
+        }
     }
 
     private string ForegroundApp() => foreground.Read()?.ProcessName.ToLowerInvariant() switch
@@ -195,54 +211,80 @@ internal static class ClipboardSqlWriter
 /// </summary>
 internal static class SsmsSqlEditorFormatter
 {
-    private const byte Ctrl = 0x11, KeyA = 0x41, KeyC = 0x43, KeyV = 0x56;
-    private const uint KeyUp = 2;
+    private const ushort Ctrl = 0x11, KeyA = 0x41, KeyC = 0x43, KeyV = 0x56, KeyRight = 0x27;
+    private const uint KeyUp = 0x0002;
+    private const uint InputKeyboard = 1;
 
     public static Task<DevDeckOperationResult> FormatAsync(chris7197SqlFormatter formatter,
-        bool stripDbo, CancellationToken token) => ClipboardSqlWriter.OnSta(() => Format(formatter, stripDbo, token), token);
+        bool stripDbo, CancellationToken token, DeckLog log, string traceId) =>
+        ClipboardSqlWriter.OnSta(() => Format(formatter, stripDbo, token, log, traceId), token);
 
-    private static DevDeckOperationResult Format(chris7197SqlFormatter formatter, bool stripDbo, CancellationToken token)
+    private static DevDeckOperationResult Format(chris7197SqlFormatter formatter, bool stripDbo,
+        CancellationToken token, DeckLog log, string traceId)
     {
+        void Trace(string stage) => log.WriteTrace($"SQL[{traceId}] SSMS {stage}");
         IntPtr hwnd = GetForegroundWindow();
+        Trace($"foreground window detected={hwnd != IntPtr.Zero}, isSsms={IsSsmsForeground(hwnd)}.");
         if (!IsSsmsForeground(hwnd)) return new(false, "Focus the SSMS SQL editor first.");
 
         IDataObject? oldClipboard = null;
         try { oldClipboard = Clipboard.GetDataObject(); }
-        catch (ExternalException) { /* Clipboard may be occupied by another process. */ }
+        catch (ExternalException) { Trace("original clipboard temporarily inaccessible."); }
 
         bool changedClipboard = false;
         bool pasted = false;
         bool selectedAll = false;
         try
         {
-            string marker = "DevDeck-SQL-" + Guid.NewGuid().ToString("N");
-            Clipboard.SetText(marker, TextDataFormat.UnicodeText);
+            // Use a unique marker for each attempt. An unchanged marker means that
+            // Ctrl+C did not reach a text selection or SSMS did not update the clipboard.
             changedClipboard = true;
-            if (!StillFocused(hwnd)) return new(false, "SSMS lost focus. Nothing was edited.");
-            SendCtrl(KeyC);
-            string sql = ReadCopiedText(marker);
-            if (sql == marker)
+            Trace("attempting selected-text copy.");
+            string? sql = TryCopySql(hwnd, token, log, traceId);
+            if (sql is null)
             {
-                // No selection copied: format the entire current query window.
+                Trace("selected-text copy yielded no text; trying Select All fallback.");
+                // No selection copied: try the whole query. In particular, do not
+                // interpret a failed Ctrl+C as proof that the query tab is missing.
                 if (!StillFocused(hwnd)) return new(false, "SSMS lost focus. Nothing was edited.");
                 SendCtrl(KeyA);
                 selectedAll = true;
-                SendCtrl(KeyC);
-                sql = ReadCopiedText(marker);
+                Thread.Sleep(80); // Allow SSMS to process Select All before Copy.
+                sql = TryCopySql(hwnd, token, log, traceId);
             }
-            if (sql == marker || string.IsNullOrWhiteSpace(sql))
-                return new(false, "No SQL could be copied from the SSMS editor. Focus a query tab, not Object Explorer.");
+            if (sql is null || string.IsNullOrWhiteSpace(sql))
+            {
+                Trace("copy unsuccessful or text empty after fallback. No paste attempted.");
+                return new(false, "SSMS is active, but DevDeck couldn't copy SQL. Click inside the query text " +
+                    "(not just its tab) and retry. If Ctrl+A / Ctrl+C work manually, check whether SSMS " +
+                    "is running as administrator while DevDeck is not. No text was replaced.");
+            }
 
+            Trace($"copy succeeded, characters={sql.Length}, entireDocument={selectedAll}; formatting.");
             token.ThrowIfCancellationRequested();
             string updated = formatter.Format(sql, stripDbo); // Throws before any paste on parse/equivalence failure.
             if (string.Equals(sql, updated, StringComparison.Ordinal))
+            {
+                Trace("formatter output unchanged, no paste required.");
                 return new(true, "SQL is already formatted.");
-            if (!StillFocused(hwnd)) return new(false, "SSMS focus changed before paste. Nothing was replaced.");
+            }
+            Trace($"formatting complete, outputCharacters={updated.Length}.");
+            if (!StillFocused(hwnd))
+            {
+                Trace("focus lost before clipboard update; paste skipped.");
+                return new(false, "SSMS focus changed before paste. Nothing was replaced.");
+            }
 
             Clipboard.SetText(updated, TextDataFormat.UnicodeText);
-            if (!StillFocused(hwnd)) return new(false, "SSMS lost focus before paste. Nothing was replaced.");
+            if (!StillFocused(hwnd))
+            {
+                Trace("focus lost after clipboard update; paste skipped.");
+                return new(false, "SSMS lost focus before paste. Nothing was replaced.");
+            }
+            Trace("sending Paste shortcut.");
             SendCtrl(KeyV);
             pasted = true;
+            Trace("paste shortcut sent successfully.");
             // Leave formatted SQL in the clipboard; Ctrl+Z in SSMS undoes the editor change.
             return new(true, "Formatted the selected SQL (or entire query) in SSMS. Ctrl+Z undoes the edit.");
         }
@@ -252,31 +294,71 @@ internal static class SsmsSqlEditorFormatter
             // overwrite the entire SQL window even though DevDeck made no edit.
             if (selectedAll && !pasted && StillFocused(hwnd))
             {
-                try { keybd_event(0x27, 0, 0, UIntPtr.Zero); keybd_event(0x27, 0, KeyUp, UIntPtr.Zero); }
-                catch (Exception) { /* keep the original error */ }
+                try { SendKey(KeyRight); Trace("cleared Select All after unsuccessful operation."); }
+                catch (Exception) { Trace("could not clear Select All after unsuccessful operation."); }
             }
             if (changedClipboard && !pasted && oldClipboard is not null)
             {
-                try { Clipboard.SetDataObject(oldClipboard, true); }
-                catch (ExternalException) { /* Don't mask the original failure. */ }
+                try { Clipboard.SetDataObject(oldClipboard, true); Trace("restored previous clipboard data."); }
+                catch (ExternalException) { Trace("could not restore previous clipboard data."); }
             }
         }
     }
 
-    private static string ReadCopiedText(string marker)
+    private static string? TryCopySql(IntPtr hwnd, CancellationToken token, DeckLog log, string traceId)
     {
-        // Copy is asynchronous across processes: allow SSMS time to populate the clipboard.
-        for (int i = 0; i < 15; i++)
+        // SSMS can be slow to process synthetic input, particularly on a busy UI
+        // thread. Retry without modifying its document. Each attempt gets a new
+        // clipboard marker, so a previous unsuccessful copy cannot appear valid.
+        for (int attempt = 0; attempt < 2; attempt++)
         {
-            Thread.Sleep(45);
+            token.ThrowIfCancellationRequested();
+            if (!StillFocused(hwnd))
+            {
+                log.WriteTrace($"SQL[{traceId}] SSMS focus changed before copy attempt {attempt + 1}.");
+                return null;
+            }
+            string marker = "DevDeck-SQL-" + Guid.NewGuid().ToString("N");
+            Clipboard.SetText(marker, TextDataFormat.UnicodeText);
+            if (!StillFocused(hwnd))
+            {
+                log.WriteTrace($"SQL[{traceId}] SSMS focus changed after clipboard marker, before Ctrl+C.");
+                return null;
+            }
+            log.WriteTrace($"SQL[{traceId}] SSMS sending Ctrl+C (attempt {attempt + 1}/2).");
+            SendCtrl(KeyC);
+            string? text = ReadCopiedText(marker, token);
+            if (text is not null)
+            {
+                log.WriteTrace($"SQL[{traceId}] SSMS clipboard copy succeeded (attempt {attempt + 1}/2).");
+                return text;
+            }
+            log.WriteTrace($"SQL[{traceId}] SSMS copy timed out (attempt {attempt + 1}/2).");
+            Thread.Sleep(90);
+        }
+        return null;
+    }
+
+    private static string? ReadCopiedText(string marker, CancellationToken token)
+    {
+        // Copy crosses process boundaries. Look for changed clipboard content
+        // rather than assuming it is ready immediately after the shortcut.
+        for (int i = 0; i < 25; i++)
+        {
+            token.ThrowIfCancellationRequested();
+            Thread.Sleep(40);
             try
             {
-                string text = Clipboard.ContainsText() ? Clipboard.GetText(TextDataFormat.UnicodeText) : marker;
+                string text = Clipboard.ContainsText(TextDataFormat.UnicodeText)
+                    ? Clipboard.GetText(TextDataFormat.UnicodeText)
+                    : Clipboard.ContainsText(TextDataFormat.Text)
+                        ? Clipboard.GetText(TextDataFormat.Text)
+                        : marker;
                 if (text != marker) return text;
             }
-            catch (ExternalException) { /* retry until deadline */ }
+            catch (ExternalException) { /* Clipboard is temporarily locked; retry. */ }
         }
-        return marker;
+        return null;
     }
 
     private static bool StillFocused(IntPtr hwnd) => hwnd != IntPtr.Zero && GetForegroundWindow() == hwnd && IsSsmsForeground(hwnd);
@@ -294,15 +376,73 @@ internal static class SsmsSqlEditorFormatter
         { return false; }
     }
 
-    private static void SendCtrl(byte key)
+    private static void SendCtrl(ushort key)
     {
-        keybd_event(Ctrl, 0, 0, UIntPtr.Zero);
-        keybd_event(key, 0, 0, UIntPtr.Zero);
-        keybd_event(key, 0, KeyUp, UIntPtr.Zero);
-        keybd_event(Ctrl, 0, KeyUp, UIntPtr.Zero);
+        // Send one uninterrupted input batch rather than four independent
+        // keybd_event calls. Check the result: injection can be blocked when SSMS
+        // is elevated above DevDeck (Windows UIPI), even with SSMS foreground.
+        SendKeys(InputFor(Ctrl), InputFor(key), InputFor(key, KeyUp), InputFor(Ctrl, KeyUp));
+    }
+
+    private static void SendKey(ushort key) => SendKeys(InputFor(key), InputFor(key, KeyUp));
+
+    private static KeyboardEvent InputFor(ushort key, uint flags = 0) => new()
+    {
+        Type = InputKeyboard,
+        Data = new InputData { Keyboard = new KeyboardInput { VirtualKey = key, Flags = flags } }
+    };
+
+    private static void SendKeys(params KeyboardEvent[] inputs)
+    {
+        uint sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<KeyboardEvent>());
+        if (sent != inputs.Length)
+            throw new SqlFormattingException("Windows could not send the keyboard shortcut to SSMS. " +
+                "If SSMS is running as administrator, run it normally or use a DevDeck instance " +
+                "with matching permissions. No paste was attempted.");
+    }
+
+    // INPUT includes a union with MOUSEINPUT (larger than KEYBDINPUT), so use
+    // the real native layout on both x86 and x64 rather than a truncated struct.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KeyboardEvent
+    {
+        public uint Type;
+        public InputData Data;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct InputData
+    {
+        [FieldOffset(0)] public MouseInput Mouse;
+        [FieldOffset(0)] public KeyboardInput Keyboard;
+        [FieldOffset(0)] public HardwareInput Hardware;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MouseInput
+    {
+        public int X, Y;
+        public uint MouseData, Flags, Time;
+        public UIntPtr ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KeyboardInput
+    {
+        public ushort VirtualKey, ScanCode;
+        public uint Flags, Time;
+        public UIntPtr ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct HardwareInput
+    {
+        public uint Message;
+        public ushort ParameterLow, ParameterHigh;
     }
 
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
-    [DllImport("user32.dll")] private static extern void keybd_event(byte key, byte scanCode, uint flags, UIntPtr extraInfo);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint inputCount, [In] KeyboardEvent[] inputs, int inputSize);
 }

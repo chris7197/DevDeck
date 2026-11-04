@@ -39,6 +39,14 @@ if ($settings.Profiles.SqlServer[11] -ne 'com.chris7197.devdeck.closeothers' -or
 $format = Get-Content -LiteralPath (Join-Path $root 'scripts/Format-CSharp.ps1') -Raw
 $defaults = Get-Content -LiteralPath (Join-Path $root 'scripts/csharpier-defaults.json') -Raw | ConvertFrom-Json
 if (-not ($format -match 'csharpier') -or $defaults.printWidth -ne 140) { throw 'CSharpier configuration missing.' }
+# C# formatter must never equate exit code 0 with an actual edit.
+$csharpOperation = Get-Content -LiteralPath (Join-Path $root 'src/chris7197.DevDeck.Core/Actions/FormatCSharpOperation.cs') -Raw
+$pluginCode = Get-Content -LiteralPath (Join-Path $root 'src/chris7197.DevDeck.Plugin/Program.cs') -Raw
+if ($csharpOperation -notmatch 'HashAsync' -or $csharpOperation -notmatch 'NoChanges: true' -or
+    $pluginCode -notmatch 'result.NoChanges' -or $format -notmatch '--no-cache') {
+    throw 'C# formatting change detection or no-change feedback is missing.'
+}
+
 $publish = Get-Content -LiteralPath (Join-Path $root 'scripts/Publish-Plugin.ps1') -Raw
 if ($publish -notmatch 'Format-CSharp.ps1' -or $publish -notmatch 'csharpier-defaults.json') {
     throw 'Publish script does not bundle the formatter.'

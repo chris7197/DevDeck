@@ -1,4 +1,5 @@
 using chris7197.DevDeck.Core;
+using System.Diagnostics;
 
 namespace chris7197.DevDeck.Plugin;
 
@@ -53,10 +54,16 @@ internal static class Program
                 // dispatches the action currently shown for the foreground application.
                 runtime.Profiles.Refresh();
                 IDevDeckOperation? operation = runtime.ResolveProfileAction(keyEvent.Action);
-                if (operation is null) return;
+                if (operation is null)
+                {
+                    log.WriteTrace($"Controller key press ignored: no operation resolved for action={keyEvent.Action}.");
+                    return;
+                }
+                log.WriteTrace($"Controller key press: action={operation.PluginActionId}.");
                 IDisposable? lease = actions.TryBegin(keyEvent.Context, operation.PluginActionId);
                 if (lease is null)
                 {
+                    log.WriteTrace($"Controller action busy: {operation.PluginActionId}.");
                     await deck.ShowAlertAsync(keyEvent.Context);
                     return;
                 }
@@ -69,12 +76,17 @@ internal static class Program
 
             async Task ExecuteActionAsync(IDevDeckOperation operation, StreamDockKeyEvent keyEvent, IDisposable lease)
             {
+                string traceId = Guid.NewGuid().ToString("N")[..8];
+                var clock = Stopwatch.StartNew();
+                log.WriteTrace($"Action[{traceId}] started name={operation.Name.Replace('\n', ' ')} " +
+                    $"id={operation.PluginActionId}.");
                 try
                 {
                     await deck.SetImageAsync(keyEvent.Context, DevDeckButtonRenderer.RenderDataUrl(
                         new DevDeckButtonState(operation.Name, "Working...", DeckStatus.Busy, IconName: operation.IconName)));
                     DeckActionSettings? options = statusMonitor.SettingsFor(keyEvent.Context);
                     bool needsSolution = operation.RequiresSolutionFor(options);
+                    log.WriteTrace($"Action[{traceId}] context required={needsSolution}.");
                     DeveloperContext? selectedContext = needsSolution
                         ? await runtime.SolutionSelector.ResolveAsync(operation.Name, operation.SaveAllBeforeExecute,
                             lifetime.Token)
@@ -82,31 +94,42 @@ internal static class Program
                     // Escape cancels before any operation begins, including Git or migrations.
                     if (selectedContext is null && needsSolution)
                     {
+                        log.WriteTrace($"Action[{traceId}] solution selection cancelled.");
                         log.Write("Solution selection cancelled for " + operation.Name.Replace('\n', ' '));
                         return;
                     }
                     DeveloperContext context = selectedContext ??
                         new DeveloperContext(Environment.CurrentDirectory, null, null);
+                    log.WriteTrace($"Action[{traceId}] invoking operation; hasContext={selectedContext is not null}.");
                     DevDeckOperationResult result = await operation.ExecuteAsync(new DevDeckOperationContext(
                         context,
                         stage => deck.SetImageAsync(keyEvent.Context, DevDeckButtonRenderer.RenderDataUrl(
                             new DevDeckButtonState(operation.Name, stage.Replace('\n', ' '), DeckStatus.Busy, IconName: operation.IconName))),
                         CancellationToken: lifetime.Token,
                         ActionSettings: options));
+                    log.WriteTrace($"Action[{traceId}] result success={result.Success} cancelled={result.Cancelled} " +
+                        $"durationMs={clock.ElapsedMilliseconds}.");
                     if (result.Cancelled) log.Write($"{operation.Name.Replace('\n', ' ')}: Cancelled");
                     else if (result.Success) log.Write($"{operation.Name.Replace('\n', ' ')}: {result.Message}");
                     else log.WriteError($"{operation.Name.Replace('\n', ' ')} failed: {result.Message}");
                     if (result.Cancelled) { /* Escape: silent, intentional cancellation. */ }
+                    else if (result.NoChanges)
+                        await deck.SetImageAsync(keyEvent.Context, DevDeckButtonRenderer.RenderDataUrl(
+                            new DevDeckButtonState(operation.Name, "No changes", DeckStatus.Warning,
+                                result.Message, IconName: operation.IconName)));
                     else if (result.Success) await deck.ShowOkAsync(keyEvent.Context);
                     else await deck.ShowAlertAsync(keyEvent.Context);
                 }
                 catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
                 {
+                    log.WriteTrace($"Action[{traceId}] shutdown cancellation after {clock.ElapsedMilliseconds}ms.");
                     log.Write($"Action {operation.Name.Replace('\n', ' ')} canceled on controller shutdown. " +
                         "Check any in-progress Git operation before retrying.");
                 }
                 catch (Exception e)
                 {
+                    log.WriteTrace($"Action[{traceId}] exception type={e.GetType().Name}, " +
+                        $"durationMs={clock.ElapsedMilliseconds}.");
                     log.WriteError($"Action failed ({keyEvent.Action}): {e}");
                     try
                     {

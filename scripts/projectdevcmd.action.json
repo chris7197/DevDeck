@@ -1,0 +1,22 @@
+{
+  "UUID": "com.chris7197.devdeck.projectdevcmd",
+  "Icon": "images/project-devcmd-action.png",
+  "Name": "Project Developer Command Prompt",
+  "Tooltip": "Open Visual Studio Developer Command Prompt in the folder of the project containing the active editor file. Uses the selected Visual Studio instance.",
+  "States": [
+    {
+      "Image": "images/project-devcmd-key.png",
+      "Title": "Dev\nCmd",
+      "FontSize": "13",
+      "FontStyle": "Bold",
+      "TitleAlignment": "bottom",
+      "TitleColor": "#FFFFFF"
+    }
+  ],
+  "Settings": {},
+  "UserTitleEnabled": false,
+  "SupportedInMultiActions": false,
+  "Controllers": [
+    "Keypad"
+  ]
+}

@@ -6,7 +6,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'DevDeck extra action self-test failed.' }
     $manifest = Get-Content .\plugin\manifest.json -Raw | ConvertFrom-Json
     $ids = @($manifest.Actions | ForEach-Object { $_.UUID })
-    foreach ($suffix in @('teamschannel','openvscode','opensolution')) {
+    foreach ($suffix in @('teamschannel','openvscode','opensolution','projectdevcmd')) {
         if ($ids -notcontains "com.chris7197.devdeck.$suffix") { throw "Missing action $suffix in manifest" }
     }
     if (!(Test-Path .\plugin\property-inspector.html)) { throw 'Missing Property Inspector.' }

@@ -10,7 +10,7 @@ public sealed record DevDeckOperationContext(
     public Task ProgressAsync(string text) => ReportProgress?.Invoke(text) ?? Task.CompletedTask;
 }
 
-public sealed record DevDeckOperationResult(bool Success, string Message, bool HasConflicts = false, bool Cancelled = false);
+public sealed record DevDeckOperationResult(bool Success, string Message, bool HasConflicts = false, bool Cancelled = false, bool NoChanges = false);
 
 public interface IDevDeckOperation
 {

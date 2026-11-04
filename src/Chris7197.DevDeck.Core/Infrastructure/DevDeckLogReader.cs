@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace chris7197.DevDeck.Core;
 
-public enum DevDeckLogSeverity { Information, Warning, Error }
+public enum DevDeckLogSeverity { Information, Warning, Error, Trace }
 public sealed record DevDeckLogEntry(DateTimeOffset Timestamp, DevDeckLogSeverity Severity,
     string Summary, string Details);
 public sealed record DevDeckLogPoll(IReadOnlyList<DevDeckLogEntry> Entries, bool Reinitialized);
@@ -15,7 +15,7 @@ public sealed record DevDeckLogPoll(IReadOnlyList<DevDeckLogEntry> Entries, bool
 public sealed class DevDeckLogReader(string path, int maxEntries = 300, int maxReadBytes = 524_288)
 {
     private static readonly Regex Header = new(
-        @"^\[(?<when>\d{4}-\d\d-\d\dT[^\]]+)\]\s*(?:\[(?<level>INFO|WARN|WARNING|ERROR)\]\s*)?(?<message>.*)$",
+        @"^\[(?<when>\d{4}-\d\d-\d\dT[^\]]+)\]\s*(?:\[(?<level>INFO|WARN|WARNING|ERROR|TRACE)\]\s*)?(?<message>.*)$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase,
         TimeSpan.FromMilliseconds(100));
 
@@ -165,6 +165,7 @@ public sealed class DevDeckLogReader(string path, int maxEntries = 300, int maxR
         if (level.Equals("WARN", StringComparison.OrdinalIgnoreCase) ||
             level.Equals("WARNING", StringComparison.OrdinalIgnoreCase)) return DevDeckLogSeverity.Warning;
         if (level.Equals("INFO", StringComparison.OrdinalIgnoreCase)) return DevDeckLogSeverity.Information;
+        if (level.Equals("TRACE", StringComparison.OrdinalIgnoreCase)) return DevDeckLogSeverity.Trace;
 
         // Compatibility with logs written before severity markers existed.
         string[] oldErrors = ["Action failed", "SYNC FAILED:", "Plugin startup/connection failure:",

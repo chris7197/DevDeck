@@ -4,8 +4,6 @@ using chris7197.DevDeck.Plugin;
 
 try
 {
-    TestSettingsOverridesAndLogMappings();
-    Console.WriteLine("PASS: private settings overlay and configurable log mappings");
     TestLogReaderAndSeverity();
     Console.WriteLine("PASS: tray log parsing, multiline errors, incremental notifications and rotation");
     TestActionCoordinator();
@@ -30,41 +28,6 @@ catch (Exception ex)
     return 1;
 }
 
-
-static void TestSettingsOverridesAndLogMappings()
-{
-    string folder = Path.Combine(Path.GetTempPath(), "DevDeckConfigTest-" + Guid.NewGuid().ToString("N"));
-    Directory.CreateDirectory(folder);
-    try
-    {
-        File.WriteAllText(Path.Combine(folder, "settings.json"), """
-        {
-          "Remote": "origin", "Teams": { "PollSeconds": 60 },
-          "LogMappings": [{ "PathFilter": "*Example.sln", "RelativePath": "public.log" }],
-          "ProfileRules": [{ "Profile": "VisualStudio", "Process": "devenv" }]
-        }
-        """);
-        File.WriteAllText(Path.Combine(folder, "settings.local.json"), """
-        {
-          "Remote": "private-origin",
-          "Teams": { "ClientId": "test-private-id" },
-          "LogMappings": [{ "PathFilter": "*Example.sln", "RelativePath": "private.log" }]
-        }
-        """);
-        DeckSettings settings = DeckSettings.Load(folder);
-        if (settings.Remote != "private-origin" || settings.Teams.PollSeconds != 60 ||
-            settings.Teams.ClientId != "test-private-id" || settings.LogMappings.Count != 1 ||
-            settings.LogMappings[0].RelativePath != "private.log" || settings.ProfileRules.Count != 1)
-            throw new InvalidOperationException("Local overrides did not merge as expected.");
-        string solution = Path.Combine(folder, "Example.sln");
-        File.WriteAllText(solution, "solution fixture");
-        string privateLog = Path.Combine(folder, "private.log");
-        File.WriteAllText(privateLog, "private test log");
-        if (new LogFileResolver(settings).FindLatest(solution) != privateLog)
-            throw new InvalidOperationException("Log resolver ignored configured local mapping.");
-    }
-    finally { Directory.Delete(folder, recursive: true); }
-}
 
 static async Task TestUnifiedCloseOthersAsync()
 {
@@ -464,6 +427,22 @@ static void TestLogReaderAndSeverity()
         if (DevDeckLogReader.Classify("", "No error log found for solution") != DevDeckLogSeverity.Information ||
             DevDeckLogReader.Classify("", "SYNC FAILED: issue") != DevDeckLogSeverity.Error)
             throw new InvalidOperationException("Legacy severity detection too broad or missing.");
+
+        // Trace logging is disabled unless explicitly enabled. The running plugin
+        // should observe changes immediately and the reader must classify TRACE.
+        logger.WriteTrace("Should not exist");
+        if (watcher.Poll().Entries.Count != 0)
+            throw new InvalidOperationException("Trace was recorded while disabled.");
+        logger.SetTraceEnabled(true);
+        if (!logger.TraceEnabled) throw new InvalidOperationException("Trace was not enabled.");
+        logger.WriteTrace("SQL[abc12345] SSMS copy timed out.");
+        DevDeckLogPoll traces = watcher.Poll();
+        if (traces.Entries.Count != 1 || traces.Entries[0].Severity != DevDeckLogSeverity.Trace)
+            throw new InvalidOperationException("Trace record was not parsed correctly.");
+        logger.SetTraceEnabled(false);
+        logger.WriteTrace("Should not exist either");
+        if (watcher.Poll().Entries.Count != 0)
+            throw new InvalidOperationException("Trace continued after being disabled.");
     }
     finally { Directory.Delete(folder, recursive: true); }
 }

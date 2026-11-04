@@ -42,7 +42,7 @@ public sealed class DevDeckRuntime
         LastErrors = new LastErrorService(LatestLogs, settings);
         Teams = new TeamsChannelService(settings.Teams);
         var navigator = new VisualStudioSourceNavigator(VisualStudioCom);
-        Investigations = new SmartInvestigationService(new GitProcess(log, 15, logCommands: false), settings);
+        Investigations = new SmartInvestigationService(new GitProcess(log, 15, logCommands: false));
         Prompts = new SerializedPromptService(new ExternalOverlayPromptService());
         SolutionSelector = new SolutionSelectionResolver(visualStudio, Prompts);
         FlightRecorder = new DbFlightRecorderService(settings);
@@ -60,13 +60,14 @@ public sealed class DevDeckRuntime
             new NewMigrationOperation(Migrations),
             new TeamsChannelOperation(Teams),
             new OpenInVsCodeOperation(settings, documents),
+            new OpenProjectDeveloperPromptOperation(VisualStudioCom),
             new CloseOtherTabsOperation(foreground, visualStudio,
                 new CloseOtherVisualStudioTabsOperation(VisualStudioCom),
                 new ShortcutOperation(CloseOtherTabsOperation.OldSsmsActionId, "Close Others",
                     "CTRL+ALT+SHIFT+W", DevDeckIcons.CloseOthers, "SqlServer", Profiles, foreground)),
             new FormatCSharpOperation(documents),
             new FormatSqlOperation(foreground, visualStudio, VisualStudioCom,
-                new chris7197SqlFormatter(), settings),
+                new chris7197SqlFormatter(), settings, log),
             new OpenSolutionOperation(visualStudio),
             new SmartInvestigateOperation(Investigations, navigator, Prompts, settings.SmartInvestigateAmbiguousCodePattern),
             new DbFlightRecorderOperation(FlightRecorder),

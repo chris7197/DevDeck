@@ -54,6 +54,9 @@ try {
 
     $arguments += $(if ($Check) { 'check' } else { 'format' })
     $arguments += $target
+    # One active file at a time: bypass stale formatter cache entries while diagnosing
+    # no-op results. Ignore rules and per-repository configuration are still respected.
+    if (-not $Check) { $arguments += '--no-cache' }
     if ($ConfigPath) {
         if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) { throw "CSharpier config not found: $ConfigPath" }
         $arguments += @('--config-path', [IO.Path]::GetFullPath($ConfigPath))
@@ -64,6 +67,8 @@ try {
     }
 
     Write-Host "CSharpier: $target"
+    Write-Host ("Configuration: " + $(if ($ConfigPath) { "explicit" } elseif ($hasProjectConfig) { "repository" } else { "DevDeck defaults (140 columns)" }))
+    Write-Host ("Invocation: " + $(if ($localTool) { "local dotnet tool" } else { "global csharpier tool" }))
     & $exe @arguments
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     exit 0

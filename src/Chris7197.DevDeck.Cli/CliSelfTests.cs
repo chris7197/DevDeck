@@ -46,8 +46,8 @@ internal static class CliSelfTests
         {
             matches &= product.Kind == InvestigationKind.ProductCode &&
                        accessory.Kind == InvestigationKind.AccessoryCode &&
-                       File.ReadAllText(product.ReportPath!).Contains("# ProductCode investigation") &&
-                       File.ReadAllText(accessory.ReportPath!).Contains("# AccessoryCode investigation");
+                       File.ReadAllText(product.ReportPath!).Contains("dbo.Products WHERE PROD_Code") &&
+                       File.ReadAllText(accessory.ReportPath!).Contains("dbo.AccessoryStock WHERE AccessoryCode");
         }
         finally
         {
@@ -66,8 +66,8 @@ internal static class CliSelfTests
         {
             ["abcdef12345"] = InvestigationKind.GitCommit,
             ["000615"] = InvestigationKind.ManufacturingCode,
-            ["dbo.SampleItems"] = InvestigationKind.SqlObject,
-            ["SampleApp.Services.Example"] = InvestigationKind.CSharpSymbol,
+            ["dbo.GEN_ProdSchedule"] = InvestigationKind.SqlObject,
+            ["chris7197.Manufacturing.BookOffAllocation"] = InvestigationKind.CSharpSymbol,
             ["System.InvalidOperationException: test"] = InvestigationKind.Exception,
             ["https://example.org/issue/123"] = InvestigationKind.Url,
             ["password-please-do-not-store-this"] = InvestigationKind.Unrecognised
@@ -94,10 +94,10 @@ internal static class CliSelfTests
         Directory.CreateDirectory(temporary);
         try
         {
-            string sampleJsonSolution = Path.Combine(temporary, "SampleApp.sln");
-            string sampleXmlSolution = Path.Combine(temporary, "SampleLegacy.sln");
-            File.WriteAllText(sampleJsonSolution, "");
-            File.WriteAllText(sampleXmlSolution, "");
+            string bitMan = Path.Combine(temporary, "BitManDev.sln");
+            string bitBi = Path.Combine(temporary, "BitBI.sln");
+            File.WriteAllText(bitMan, "");
+            File.WriteAllText(bitBi, "");
             File.WriteAllText(Path.Combine(temporary, "appsettings.json"),
                 """
                 { "ConnectionStrings": { "MainDb": "Server=LocalJson;Database=JsonDb;Integrated Security=true" } }
@@ -124,8 +124,8 @@ internal static class CliSelfTests
             {
                 DbFlightRecorderConfigMappings =
                 [
-                    new() { PathFilter = "*SampleApp.sln", ConfigPath = "appsettings.json", ConnectionStringName = "MainDb" },
-                    new() { PathFilter = "*SampleLegacy.sln", ConfigPath = "web.config", ConnectionStringName = "LegacyDb" }
+                    new() { PathFilter = "*BitManDev.sln", ConfigPath = "appsettings.json", ConnectionStringName = "MainDb" },
+                    new() { PathFilter = "*BitBI.sln", ConfigPath = "web.config", ConnectionStringName = "LegacyDb" }
                 ],
                 DbFlightRecorderTargets =
                 [
@@ -133,12 +133,12 @@ internal static class CliSelfTests
                 ]
             };
             var service = new DbFlightRecorderService(demoSettings);
-            DbFlightPreview json = service.Preview(null, sampleJsonSolution);
-            DbFlightPreview xml = service.Preview(null, sampleXmlSolution);
-            DbFlightPreview named = service.Preview("Explicit", sampleJsonSolution);
+            DbFlightPreview json = service.Preview(null, bitMan);
+            DbFlightPreview xml = service.Preview(null, bitBi);
+            DbFlightPreview named = service.Preview("Explicit", bitMan);
             var efSettings = new DeckSettings { DbFlightRecorderConfigMappings =
-                [new() { PathFilter = "*SampleLegacy.sln", ConfigPath = "legacy-entity.config", ConnectionStringName = "LegacyEf" }] };
-            DbFlightPreview ef = new DbFlightRecorderService(efSettings).Preview(null, sampleXmlSolution);
+                [new() { PathFilter = "*BitBI.sln", ConfigPath = "legacy-entity.config", ConnectionStringName = "LegacyEf" }] };
+            DbFlightPreview ef = new DbFlightRecorderService(efSettings).Preview(null, bitBi);
             bool passed = json.Server == "LocalJson" && json.Database == "JsonDb" &&
                 xml.Server == "LocalXml" && xml.Database == "XmlDb" &&
                 named.Server == "ExplicitSql" && named.Database == "ExplicitDb" &&
@@ -165,9 +165,42 @@ internal static class CliSelfTests
             && runtime.FindAction("com.chris7197.devdeck.teamschannel") is not null
             && runtime.FindAction("com.chris7197.devdeck.openvscode") is not null
             && runtime.FindAction("com.chris7197.devdeck.opensolution") is not null
+            && runtime.FindAction(OpenProjectDeveloperPromptOperation.ActionId) is not null
+            && TestDeveloperPromptLauncher()
             && runtime.Profiles.Resolve(DevDeckProfiles.SlotId(6)) is not null;
         Console.WriteLine(passes ? "New actions and initials: PASS" : "New actions and initials: FAIL");
         return passes ? 0 : 1;
+    }
+
+    /// <summary>Offline test of VS installation selection and safe project CWD propagation.</summary>
+    private static bool TestDeveloperPromptLauncher()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "DevDeck dev cmd test " + Guid.NewGuid().ToString("N"));
+        string ide = Path.Combine(root, "Common7", "IDE");
+        string tools = Path.Combine(root, "Common7", "Tools");
+        string project = Path.Combine(root, "Project & Tools");
+        try
+        {
+            Directory.CreateDirectory(ide);
+            Directory.CreateDirectory(tools);
+            Directory.CreateDirectory(project);
+            string exe = Path.Combine(ide, "devenv.exe");
+            string batch = Path.Combine(tools, "VsDevCmd.bat");
+            File.WriteAllText(exe, "");
+            File.WriteAllText(batch, "@echo off");
+            string resolved = DeveloperCommandPromptLauncher.FindVsDevCmd(exe);
+            System.Diagnostics.ProcessStartInfo start = DeveloperCommandPromptLauncher.CreateStartInfo(resolved, project);
+            return Path.GetFullPath(resolved) == Path.GetFullPath(batch) &&
+                   start.WorkingDirectory == Path.GetFullPath(project) &&
+                   start.Environment["DEVDECK_PROJECT_DIR"] == Path.GetFullPath(project) &&
+                   start.Environment["DEVDECK_VSDEVCMD"] == Path.GetFullPath(batch) &&
+                   start.Arguments.Contains("cd /d", StringComparison.Ordinal) &&
+                   !start.UseShellExecute && !start.CreateNoWindow;
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
     }
 
     private static T GetPluginCommand<T>(DevDeckRuntime runtime, string actionId) where T : class =>

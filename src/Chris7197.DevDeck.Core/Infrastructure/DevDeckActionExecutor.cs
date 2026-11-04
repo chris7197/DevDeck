@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace chris7197.DevDeck.Core;
 
 /// <summary>
@@ -12,8 +14,15 @@ public sealed class DevDeckActionExecutor(DevDeckActionCoordinator coordinator, 
         // Acquire synchronously before the first await: two fast button presses cannot
         // both be admitted while the first is waiting for a solution overlay.
         IDisposable? lease = coordinator.TryBegin(request.KeyId, request.Operation.PluginActionId);
-        if (lease is null) return new(DevDeckExecutionStatus.Busy);
+        if (lease is null)
+        {
+            log.WriteTrace($"Action busy: {request.Operation.PluginActionId}.");
+            return new(DevDeckExecutionStatus.Busy);
+        }
 
+        string traceId = Guid.NewGuid().ToString("N")[..8];
+        var clock = Stopwatch.StartNew();
+        log.WriteTrace($"Action[{traceId}] started id={request.Operation.PluginActionId}.");
         try
         {
             request.SetBusy?.Invoke(true);
@@ -21,12 +30,14 @@ public sealed class DevDeckActionExecutor(DevDeckActionCoordinator coordinator, 
             var operation = request.Operation;
             await (request.ReportProgress?.Invoke("Working...") ?? Task.CompletedTask);
             bool needsSolution = operation.RequiresSolutionFor(request.Settings);
+            log.WriteTrace($"Action[{traceId}] context required={needsSolution}.");
             DeveloperContext? selected = needsSolution
                 ? await request.SelectSolutionAsync(operation, request.CancellationToken)
                 : await request.GetCurrentContextAsync(request.CancellationToken);
 
             if (selected is null && needsSolution)
             {
+                log.WriteTrace($"Action[{traceId}] solution selection cancelled.");
                 log.Write($"Solution selection cancelled for {DisplayName(operation)}");
                 return new(DevDeckExecutionStatus.Cancelled);
             }
@@ -42,6 +53,8 @@ public sealed class DevDeckActionExecutor(DevDeckActionCoordinator coordinator, 
             request.CancellationToken.ThrowIfCancellationRequested();
             DevDeckOperationResult result = await operation.ExecuteAsync(new DevDeckOperationContext(
                 context, request.ReportProgress, request.CancellationToken, request.Settings));
+            log.WriteTrace($"Action[{traceId}] result success={result.Success} cancelled={result.Cancelled}, " +
+                $"durationMs={clock.ElapsedMilliseconds}.");
             if (result.Cancelled)
             {
                 log.Write($"{DisplayName(operation)}: Cancelled");
@@ -53,12 +66,15 @@ public sealed class DevDeckActionExecutor(DevDeckActionCoordinator coordinator, 
         }
         catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
         {
+            log.WriteTrace($"Action[{traceId}] cancelled after {clock.ElapsedMilliseconds}ms.");
             log.WriteWarning($"Action {DisplayName(request.Operation)} cancelled during shutdown. " +
                 "Check any in-progress external operation before retrying.");
             return new(DevDeckExecutionStatus.Cancelled);
         }
         catch (Exception ex)
         {
+            log.WriteTrace($"Action[{traceId}] exception={ex.GetType().Name}, " +
+                $"durationMs={clock.ElapsedMilliseconds}.");
             log.WriteError($"Action failed ({request.Operation.PluginActionId}): {ex}");
             return new(DevDeckExecutionStatus.Failed, Error: ex);
         }

@@ -44,6 +44,8 @@ internal partial class LogViewerForm : Form
     public void ShowViewer(bool errorsOnly = false)
     {
         chkErrorsOnly.Checked = errorsOnly;
+        // When the tray has enabled tracing, show it immediately on first opening.
+        if (!Visible && new DeckLog(_logPath).TraceEnabled) chkShowTrace.Checked = true;
         if (!Visible) Show();
         WindowState = FormWindowState.Normal;
         Activate();
@@ -58,8 +60,9 @@ internal partial class LogViewerForm : Form
         try
         {
             lvEntries.Items.Clear();
-            foreach (DevDeckLogEntry entry in _allEntries.Where(x => !chkErrorsOnly.Checked ||
-                         x.Severity != DevDeckLogSeverity.Information).Reverse())
+            foreach (DevDeckLogEntry entry in _allEntries.Where(x =>
+                         (!chkErrorsOnly.Checked || x.Severity is DevDeckLogSeverity.Warning or DevDeckLogSeverity.Error) &&
+                         (chkShowTrace.Checked || x.Severity != DevDeckLogSeverity.Trace)).Reverse())
             {
                 var row = new ListViewItem(entry.Timestamp.ToLocalTime().ToString("dd MMM HH:mm:ss"));
                 row.SubItems.Add(entry.Severity.ToString());
@@ -69,6 +72,7 @@ internal partial class LogViewerForm : Form
                 {
                     DevDeckLogSeverity.Error => Color.FromArgb(255, 137, 148),
                     DevDeckLogSeverity.Warning => Color.FromArgb(255, 209, 133),
+                    DevDeckLogSeverity.Trace => Color.FromArgb(150, 174, 213),
                     _ => Color.FromArgb(228, 232, 242)
                 };
                 lvEntries.Items.Add(row);
@@ -83,6 +87,7 @@ internal partial class LogViewerForm : Form
     }
 
     private void chkErrorsOnly_CheckedChanged(object? sender, EventArgs e) => Rebuild();
+    private void chkShowTrace_CheckedChanged(object? sender, EventArgs e) => Rebuild();
 
     private void lvEntries_SelectedIndexChanged(object? sender, EventArgs e) =>
         txtDetails.Text = lvEntries.SelectedItems.Count == 0 ? "" :

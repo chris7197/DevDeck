@@ -17,6 +17,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private readonly TrayPreferences _preferences = TrayPreferences.Load();
     private readonly LogViewerForm _viewer;
     private readonly ToolStripMenuItem _notificationsMenu;
+    private readonly ToolStripMenuItem _traceMenu;
+    private readonly DeckLog _log;
     private readonly ToolStripMenuItem _warningsMenu;
     private readonly ToolStripMenuItem _detailsMenu;
     private readonly ToolStripMenuItem _startupMenu;
@@ -28,7 +30,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
     public TrayApplicationContext()
     {
-        _logPath = new DeckLog().FilePath;
+        _log = new DeckLog();
+        _logPath = _log.FilePath;
         _reader = new DevDeckLogReader(_logPath);
         IReadOnlyList<DevDeckLogEntry> existing = _reader.Initialize();
         _viewer = new LogViewerForm(_logPath);
@@ -37,6 +40,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
         _normalIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? (Icon)SystemIcons.Application.Clone();
         _attentionIcon = WithAlertDot(_normalIcon);
+        _traceMenu = new ToolStripMenuItem("Diagnostic tracing (more detail)")
+        {
+            Checked = _log.TraceEnabled,
+            CheckOnClick = false
+        };
+        _traceMenu.Click += (_, _) => ToggleTracing();
         _notificationsMenu = new ToolStripMenuItem("Show error notifications") { Checked = _preferences.NotificationsEnabled, CheckOnClick = true };
         _notificationsMenu.CheckedChanged += (_, _) =>
         {
@@ -62,12 +71,13 @@ internal sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add("View recent log entries", null, (_, _) => OpenViewer());
         menu.Items.Add("Show errors / warnings", null, (_, _) => OpenViewer(errorsOnly: true));
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(_traceMenu);
         menu.Items.Add(_notificationsMenu);
         menu.Items.Add(_warningsMenu);
         menu.Items.Add(_detailsMenu);
         menu.Items.Add(_startupMenu);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Test error notification", null, (_, _) => new DeckLog().WriteError("Test error notification requested from DevDeck Tray."));
+        menu.Items.Add("Test error notification", null, (_, _) => _log.WriteError("Test error notification requested from DevDeck Tray."));
         menu.Items.Add("Exit DevDeck Tray", null, (_, _) => ExitThread());
 
         _notificationIcon = new NotifyIcon
@@ -183,6 +193,24 @@ internal sealed class TrayApplicationContext : ApplicationContext
             MessageBox.Show(_viewer,
                 "DevDeck could not clear the log (it may be open in another program).\n\n" + ex.Message,
                 "Cannot clear log", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void ToggleTracing()
+    {
+        try
+        {
+            bool enabled = !_log.TraceEnabled;
+            _log.SetTraceEnabled(enabled);
+            _traceMenu.Checked = enabled;
+            _log.Write(enabled
+                ? "Diagnostic tracing enabled from DevDeck Tray (SQL text and clipboard contents are not recorded)."
+                : "Diagnostic tracing disabled from DevDeck Tray.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show("Could not change diagnostic tracing: " + ex.Message, "DevDeck Tray",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 

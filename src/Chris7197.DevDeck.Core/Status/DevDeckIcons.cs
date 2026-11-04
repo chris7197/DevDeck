@@ -12,6 +12,7 @@ public static class DevDeckIcons
     public const string NewMigration = "new-migration";
     public const string TeamsChannel = "teams-channel";
     public const string OpenVsCode = "open-vscode";
+    public const string ProjectDevCmd = "project-devcmd";
     public const string OpenSolution = "open-solution";
     public const string Investigate = "investigate";
     public const string DbFlight = "db-flight";
@@ -56,6 +57,7 @@ public static class DevDeckIcons
         NewMigration => "Mig",
         TeamsChannel => "Tm",
         OpenVsCode => "Code",
+        ProjectDevCmd => ">_",
         OpenSolution => "VS",
         Investigate => "?",
         DbFlight => "DB",

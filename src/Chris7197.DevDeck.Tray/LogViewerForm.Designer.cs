@@ -5,6 +5,7 @@ partial class LogViewerForm
     private System.ComponentModel.IContainer? components = null;
     private System.Windows.Forms.FlowLayoutPanel toolbar = null!;
     private System.Windows.Forms.CheckBox chkErrorsOnly = null!;
+    private System.Windows.Forms.CheckBox chkShowTrace = null!;
     private System.Windows.Forms.Button btnOpenLog = null!;
     private System.Windows.Forms.Button btnCopyDetails = null!;
     private System.Windows.Forms.Button btnClearLog = null!;
@@ -28,6 +29,7 @@ partial class LogViewerForm
     {
         toolbar = new System.Windows.Forms.FlowLayoutPanel();
         chkErrorsOnly = new System.Windows.Forms.CheckBox();
+        chkShowTrace = new System.Windows.Forms.CheckBox();
         btnOpenLog = new System.Windows.Forms.Button();
         btnCopyDetails = new System.Windows.Forms.Button();
         btnClearLog = new System.Windows.Forms.Button();
@@ -50,6 +52,7 @@ partial class LogViewerForm
         toolbar.AutoSize = true;
         toolbar.BackColor = System.Drawing.Color.FromArgb(24, 30, 42);
         toolbar.Controls.Add(chkErrorsOnly);
+        toolbar.Controls.Add(chkShowTrace);
         toolbar.Controls.Add(btnOpenLog);
         toolbar.Controls.Add(btnCopyDetails);
         toolbar.Controls.Add(btnClearLog);
@@ -75,13 +78,26 @@ partial class LogViewerForm
         chkErrorsOnly.UseVisualStyleBackColor = true;
         chkErrorsOnly.CheckedChanged += chkErrorsOnly_CheckedChanged;
         //
+        // chkShowTrace
+        //
+        chkShowTrace.AutoSize = true;
+        chkShowTrace.ForeColor = System.Drawing.Color.White;
+        chkShowTrace.Location = new System.Drawing.Point(190, 15);
+        chkShowTrace.Margin = new System.Windows.Forms.Padding(3, 6, 8, 3);
+        chkShowTrace.Name = "chkShowTrace";
+        chkShowTrace.Size = new System.Drawing.Size(110, 21);
+        chkShowTrace.TabIndex = 1;
+        chkShowTrace.Text = "Show trace";
+        chkShowTrace.UseVisualStyleBackColor = true;
+        chkShowTrace.CheckedChanged += chkShowTrace_CheckedChanged;
+        //
         // btnOpenLog
         //
         btnOpenLog.AutoSize = true;
         btnOpenLog.Location = new System.Drawing.Point(190, 9);
         btnOpenLog.Name = "btnOpenLog";
         btnOpenLog.Size = new System.Drawing.Size(109, 30);
-        btnOpenLog.TabIndex = 1;
+        btnOpenLog.TabIndex = 2;
         btnOpenLog.Text = "Open log file";
         btnOpenLog.UseVisualStyleBackColor = true;
         btnOpenLog.Click += btnOpenLog_Click;
@@ -92,7 +108,7 @@ partial class LogViewerForm
         btnCopyDetails.Location = new System.Drawing.Point(305, 9);
         btnCopyDetails.Name = "btnCopyDetails";
         btnCopyDetails.Size = new System.Drawing.Size(112, 30);
-        btnCopyDetails.TabIndex = 2;
+        btnCopyDetails.TabIndex = 3;
         btnCopyDetails.Text = "Copy details";
         btnCopyDetails.UseVisualStyleBackColor = true;
         btnCopyDetails.Click += btnCopyDetails_Click;
@@ -103,7 +119,7 @@ partial class LogViewerForm
         btnClearLog.Location = new System.Drawing.Point(423, 9);
         btnClearLog.Name = "btnClearLog";
         btnClearLog.Size = new System.Drawing.Size(92, 30);
-        btnClearLog.TabIndex = 3;
+        btnClearLog.TabIndex = 4;
         btnClearLog.Text = "Clear log";
         btnClearLog.UseVisualStyleBackColor = true;
         btnClearLog.Click += btnClearLog_Click;
@@ -116,7 +132,7 @@ partial class LogViewerForm
         lblSummary.Margin = new System.Windows.Forms.Padding(12, 8, 0, 0);
         lblSummary.Name = "lblSummary";
         lblSummary.Size = new System.Drawing.Size(94, 17);
-        lblSummary.TabIndex = 4;
+        lblSummary.TabIndex = 5;
         lblSummary.Text = "0 recent entries";
         //
         // splitContainer

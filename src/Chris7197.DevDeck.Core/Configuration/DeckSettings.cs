@@ -33,10 +33,8 @@ public sealed class DeckSettings
     /// <summary>Maximum concurrent controller operations. Project-changing operations remain exclusive.</summary>
     public int MaxConcurrentActions { get; set; } = 3;
 
-
     /// <summary>Automatically keep the last recognised app profile while Desktop/DevDeck is foreground.</summary>
     public bool RememberLastApplicationProfile { get; set; } = true;
-
     // First matching rule wins. Override these generic browser rules in settings.local.json.
     public List<DeckProfileRule> ProfileRules { get; set; } =
     [
@@ -45,7 +43,6 @@ public sealed class DeckSettings
         new() { Profile = "BrowserBi", Process = "msedge", TitleContains = "Dashboard" },
         new() { Profile = "BrowserBi", Process = "chrome", TitleContains = "Dashboard" }
     ];
-
     // Each array index maps to a physical profile-slot button (1 to 15).
     // Empty/null means unassigned. Values must be registered action IDs.
     public Dictionary<string, List<string?>> Profiles { get; set; } = new(StringComparer.OrdinalIgnoreCase)
@@ -55,14 +52,13 @@ public sealed class DeckSettings
             "com.chris7197.devdeck.lasterror", "com.chris7197.devdeck.newmigration",
             "com.chris7197.devdeck.openvscode", null, null, null, null, null, null,
             "com.chris7197.devdeck.closeothers", "com.chris7197.devdeck.csharpier.format",
-            "com.chris7197.devdeck.sql.format"],
+            "com.chris7197.devdeck.sql.format", "com.chris7197.devdeck.projectdevcmd"],
         ["SqlServer"] = ["com.chris7197.devdeck.ssms.newquery", "com.chris7197.devdeck.ssms.execute",
             "com.chris7197.devdeck.ssms.plan", null, null, null, null, null, null, null, null,
             "com.chris7197.devdeck.closeothers", "com.chris7197.devdeck.sql.format"],
         ["BrowserBi"] = ["com.chris7197.devdeck.browser.refresh", "com.chris7197.devdeck.browser.devtools",
             "com.chris7197.devdeck.browser.hardrefresh"]
     };
-
     // "*" selects the most recently modified FILE of any type in the mapped folder.
     // Use "*.log" if the folder also contains unrelated files.
     public string LogFilePattern { get; set; } = "*";
@@ -70,12 +66,10 @@ public sealed class DeckSettings
     // Bound tail reading for log files that may be actively written / very large.
     public int LastErrorMaxReadBytes { get; set; } = 4 * 1024 * 1024;
     public int LastErrorSearchFileCount { get; set; } = 10;
-
     // Solution path patterns support * wildcards (case-insensitive).
     // ProjectPath is RELATIVE to the solution folder. Omit mapping if the solution
     // contains exactly one project with "Migrat" in its name.
     public List<MigrationTargetSettings> MigrationTargets { get; set; } = new();
-
     public static DeckSettings Load(string baseDirectory)
     {
         // Keep shareable defaults in settings.json. Machine-, customer- and project-specific
@@ -88,13 +82,11 @@ public sealed class DeckSettings
         {
             PropertyNameCaseInsensitive = true
         }) ?? new DeckSettings();
-
         settings.InvestigationSqlLookups = new Dictionary<string, string>(
             settings.InvestigationSqlLookups ?? new(), StringComparer.OrdinalIgnoreCase);
         if (settings.InvestigationSqlLookups.Any(x => string.IsNullOrWhiteSpace(x.Key) ||
             string.IsNullOrWhiteSpace(x.Value)))
             throw new InvalidOperationException("Invalid InvestigationSqlLookups in settings.json/settings.local.json.");
-
         settings.ButtonPresets = new Dictionary<string, DeckActionSettings>(
             settings.ButtonPresets ?? new(), StringComparer.OrdinalIgnoreCase);
         if (settings.SqlFormatting is null)
@@ -102,25 +94,21 @@ public sealed class DeckSettings
         if (settings.Teams is null || settings.Teams.PollSeconds is < 15 or > 3600 ||
             settings.ButtonPresets.Any(p => p.Value is null))
             throw new InvalidOperationException("Invalid Teams/ButtonPresets settings.");
-
         if (settings.DbFlightRecorderTargets is null || settings.DbFlightRecorderTargets.Any(t =>
             t is null || string.IsNullOrWhiteSpace(t.Name) || string.IsNullOrWhiteSpace(t.Server) ||
             string.IsNullOrWhiteSpace(t.Database)) ||
             settings.DbFlightRecorderTargets.Select(t => t.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count()
                 != settings.DbFlightRecorderTargets.Count)
             throw new InvalidOperationException("Invalid or duplicate DbFlightRecorderTargets in settings.json.");
-
         if (settings.LogMappings is null || settings.LogMappings.Any(m => m is null ||
             string.IsNullOrWhiteSpace(m.PathFilter) || string.IsNullOrWhiteSpace(m.RelativePath)))
             throw new InvalidOperationException("Invalid LogMappings in settings.json/settings.local.json.");
-
         if (settings.DbFlightRecorderConfigMappings is null ||
             settings.DbFlightRecorderConfigMappings.Any(m => m is null ||
                 string.IsNullOrWhiteSpace(m.PathFilter) ||
                 string.IsNullOrWhiteSpace(m.ConfigPath) ||
                 string.IsNullOrWhiteSpace(m.ConnectionStringName)))
             throw new InvalidOperationException("Invalid DbFlightRecorderConfigMappings entries in settings.json.");
-
         // JsonSerializer normally creates dictionaries with the default case-sensitive comparer.
         settings.Profiles = new Dictionary<string, List<string?>>(settings.Profiles ?? new(), StringComparer.OrdinalIgnoreCase);
         if (settings.ProfileRules is null || settings.Profiles.Count == 0 ||
@@ -129,7 +117,6 @@ public sealed class DeckSettings
             settings.ProfileRules.Any(rule => rule is null || string.IsNullOrWhiteSpace(rule.Profile) ||
                 !settings.Profiles.ContainsKey(rule.Profile) || string.IsNullOrWhiteSpace(rule.Process)))
             throw new InvalidOperationException("Invalid profile configuration in settings.json.");
-
         if (string.IsNullOrWhiteSpace(settings.Remote) ||
             string.IsNullOrWhiteSpace(settings.MainBranch) ||
             string.IsNullOrWhiteSpace(settings.CommitMessage) ||
@@ -147,7 +134,6 @@ public sealed class DeckSettings
             string.IsNullOrWhiteSpace(settings.LogFilePattern) ||
             settings.LogFilePattern.IndexOfAny(new[] { '/', '\\' }) >= 0)
             throw new InvalidOperationException("Invalid settings.json values.");
-
         return settings;
     }
 
@@ -161,7 +147,6 @@ public sealed class DeckSettings
         });
         return parsed as JsonObject ?? throw new InvalidOperationException($"Expected a JSON object in '{path}'.");
     }
-
     private static void Merge(JsonObject target, JsonObject overrides)
     {
         foreach (KeyValuePair<string, JsonNode?> entry in overrides)
@@ -173,7 +158,6 @@ public sealed class DeckSettings
         }
     }
 }
-
 /// <summary>Shared SQL formatting settings; dbo removal is opt-in/out per key.</summary>
 public sealed class SqlFormattingSettings
 {

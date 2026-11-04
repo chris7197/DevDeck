@@ -18,16 +18,6 @@
       "Profile": "SqlServer",
       "Process": "ssms"
     },
-    {
-      "Profile": "BrowserBi",
-      "Process": "msedge",
-      "TitleContains": "Dashboard"
-    },
-    {
-      "Profile": "BrowserBi",
-      "Process": "chrome",
-      "TitleContains": "Dashboard"
-    }
   ],
   "Profiles": {
     "Default": [],
@@ -45,7 +35,8 @@
       "com.chris7197.devdeck.dbflight",
       "com.chris7197.devdeck.closeothers",
       "com.chris7197.devdeck.csharpier.format",
-      "com.chris7197.devdeck.sql.format"
+      "com.chris7197.devdeck.sql.format",
+      "com.chris7197.devdeck.projectdevcmd"
     ],
     "SqlServer": [
       "com.chris7197.devdeck.ssms.newquery",
@@ -76,23 +67,20 @@
   "FocusVsCodeChat": true,
   "ButtonPresets": {},
   "DbFlightRecorderTargets": [],
-  "DbFlightRecorderConfigMappings": [],
+  "DbFlightRecorderConfigMappings": [
+    {
+      "PathFilter": "*Project*",
+      "ConfigPath": "path\\to\\your\\app.config",
+      "ConnectionStringName": "ConnectionString",
+      "CaptureSqlText": false,
+      "CaptureExecutionPlans": false
+    }
+  ],
   "SmartInvestigateAmbiguousCodePattern": "^\\d{6}$",
   "ReportRetentionDays": 30,
   "MaxReportsPerKind": 200,
   "MaxConcurrentActions": 3,
   "SqlFormatting": {
     "RemoveDboPrefixes": true
-  },
-  "MigrationTargets": [],
-  "LogMappings": [
-    {
-      "PathFilter": "*DevDeck.LogFixture.sln",
-      "RelativePath": "Logs"
-    },
-    {
-      "PathFilter": "*DevDeck.CsvFixture.sln",
-      "RelativePath": "logs/live/error-log.csv"
-    }
-  ]
+  }
 }
