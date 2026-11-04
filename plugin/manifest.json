@@ -482,12 +482,12 @@
     {
       "UUID": "com.chris7197.devdeck.projectdevcmd",
       "Icon": "images/project-devcmd-action.png",
-      "Name": "Project Developer Command Prompt",
-      "Tooltip": "Open Visual Studio Developer Command Prompt in the folder of the project containing the active editor file. Uses the selected Visual Studio instance.",
+      "Name": "Project Developer PowerShell",
+      "Tooltip": "Open Visual Studio integrated Developer PowerShell in the project containing the active file. Set Developer PowerShell as the Visual Studio default terminal profile.",
       "States": [
         {
           "Image": "images/project-devcmd-key.png",
-          "Title": "Dev\nCmd",
+          "Title": "Dev\nPS",
           "FontSize": "13",
           "FontStyle": "Bold",
           "TitleAlignment": "bottom",

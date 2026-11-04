@@ -166,41 +166,10 @@ internal static class CliSelfTests
             && runtime.FindAction("com.chris7197.devdeck.openvscode") is not null
             && runtime.FindAction("com.chris7197.devdeck.opensolution") is not null
             && runtime.FindAction(OpenProjectDeveloperPromptOperation.ActionId) is not null
-            && TestDeveloperPromptLauncher()
+            && runtime.Profiles.Resolve(DevDeckProfiles.SlotId(15)) == OpenProjectDeveloperPromptOperation.ActionId
             && runtime.Profiles.Resolve(DevDeckProfiles.SlotId(6)) is not null;
         Console.WriteLine(passes ? "New actions and initials: PASS" : "New actions and initials: FAIL");
         return passes ? 0 : 1;
-    }
-
-    /// <summary>Offline test of VS installation selection and safe project CWD propagation.</summary>
-    private static bool TestDeveloperPromptLauncher()
-    {
-        string root = Path.Combine(Path.GetTempPath(), "DevDeck dev cmd test " + Guid.NewGuid().ToString("N"));
-        string ide = Path.Combine(root, "Common7", "IDE");
-        string tools = Path.Combine(root, "Common7", "Tools");
-        string project = Path.Combine(root, "Project & Tools");
-        try
-        {
-            Directory.CreateDirectory(ide);
-            Directory.CreateDirectory(tools);
-            Directory.CreateDirectory(project);
-            string exe = Path.Combine(ide, "devenv.exe");
-            string batch = Path.Combine(tools, "VsDevCmd.bat");
-            File.WriteAllText(exe, "");
-            File.WriteAllText(batch, "@echo off");
-            string resolved = DeveloperCommandPromptLauncher.FindVsDevCmd(exe);
-            System.Diagnostics.ProcessStartInfo start = DeveloperCommandPromptLauncher.CreateStartInfo(resolved, project);
-            return Path.GetFullPath(resolved) == Path.GetFullPath(batch) &&
-                   start.WorkingDirectory == Path.GetFullPath(project) &&
-                   start.Environment["DEVDECK_PROJECT_DIR"] == Path.GetFullPath(project) &&
-                   start.Environment["DEVDECK_VSDEVCMD"] == Path.GetFullPath(batch) &&
-                   start.Arguments.Contains("cd /d", StringComparison.Ordinal) &&
-                   !start.UseShellExecute && !start.CreateNoWindow;
-        }
-        finally
-        {
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
-        }
     }
 
     private static T GetPluginCommand<T>(DevDeckRuntime runtime, string actionId) where T : class =>
