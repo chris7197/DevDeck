@@ -1,27 +1,31 @@
 # DevDeck
 DevDeck - SOOMFON dev integration
 
+## PerfMon Data Collector Set toggle
 
-## Project Developer Command Prompt
+The `Toggle PerfMon Logging` Stream Dock action controls **an existing** Windows
+Performance Monitor Data Collector Set. It never creates or changes counters.
 
-DevDeck includes a **Project Developer Command Prompt** action (`com.chris7197.devdeck.projectdevcmd`),
-available as a standalone action. Assign it to a free slot in your existing `VisualStudio` profile.
+1. In a normal Windows terminal run `logman query` to find your Data Collector Set
+   (e.g. `Developer Diagnostics`). It must already exist under Performance Monitor
+   > Data Collector Sets > User Defined (or another accessible collector set).
+2. Add **Toggle PerfMon Logging** from the DevDeck action category to your controller.
+   In its property inspector, enter the exact **PerfMon Data Collector Set name**.
+   Alternatively set `"PerfMonCollectorName": "Developer Diagnostics"` in the
+   installed DevDeck `settings.json` for a default shared by all PerfMon keys.
+3. The key reads Windows status on each normal DevDeck status refresh: `START`
+   means stopped, red `RECORDING` means running. Press to toggle.
+4. If you use profile slots, set the slot's action ID in `Profiles` to
+   `com.chris7197.devdeck.perfmon.toggle`; optionally use
+   `ButtonPresets` (e.g. `"VisualStudio/15": {"PerfMonCollectorName":"Developer Diagnostics"}`).
 
-With a project file active in Visual Studio, press **Dev Cmd**. DevDeck queries the
-**selected Visual Studio instance** using DTE, resolves the active file's
-`ProjectItem.ContainingProject` (also works for linked project items), and opens
-an **external** Developer Command Prompt in the folder containing the owning
-`.csproj`/other project file. It loads that specific Visual Studio installation's
-`VsDevCmd.bat`, then explicitly changes to the project folder. It does **not**
-open a shell in the solution root, nor launch Visual Studio's embedded Terminal panel.
+DevDeck uses `logman query`, `logman start <name>` and `logman stop <name>`.
+The collector must be accessible by the Windows user running the Stream Dock
+plugin; some collectors require administrator rights. DevDeck will report the
+error rather than silently running elevated. Unknown or missing collector
+states are never toggled. Existing log output and retention are controlled by
+PerfMon's own Data Collector Set configuration, not DevDeck.
 
-Files opened outside a loaded project, Solution Items, and unsaved/new files with
-no physical path cannot supply an owning project; the action reports this
-instead of guessing. If several Visual Studio solutions are open, DevDeck's
-usual solution picker selects the instance whose active editor will be used.
-
-Install with `./scripts/Publish-Plugin.ps1 -Install` on Windows. Existing
-installed `settings.json` is preserved by default: assign
-`com.chris7197.devdeck.projectdevcmd` to a free VisualStudio slot, or add
-the standalone action in Stream Dock. Avoid
-`-ResetSettings` unless you intentionally want to replace all saved settings.
+With the existing installer, use `scripts/Publish-Plugin.ps1 -Install` to install
+new plugin files without resetting your existing settings. Configure the key
+in Stream Dock's property inspector after installation.

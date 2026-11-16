@@ -10,7 +10,7 @@ fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:au
 </style>
 </head>
 <body>
-<label for="Label">Button label (optional)</label><input id="Label" placeholder="Engineering / Example">
+<label for="Label">Button label (optional)</label><input id="Label" placeholder="Engineering / BitMan">
 <div id="teams" class="hidden">
   <label for="TeamId">Team ID (GUID)</label><input id="TeamId" placeholder="Team ID from Teams channel link">
   <label for="ChannelId">Channel ID</label><input id="ChannelId" placeholder="19:...@thread.tacv2">
@@ -18,7 +18,7 @@ fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:au
   <small>Each key remembers its own settings. The badge counts messages since the key's last acknowledgement, NOT the Teams app's unread badge. Run CLI --teams-login once on this Windows account.</small>
 </div>
 <div id="solution" class="hidden">
-  <label for="SolutionPath">Full path to .sln/.slnx</label><input id="SolutionPath" placeholder="C:\Projects\Example\Example.sln">
+  <label for="SolutionPath">Full path to .sln/.slnx</label><input id="SolutionPath" placeholder="C:\Projects\BitMan\BitMan.sln">
   <small>If already open, DevDeck focuses that Visual Studio window. Otherwise it launches the solution.</small>
 </div>
 <div id="investigate" class="hidden">
@@ -27,6 +27,11 @@ fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:au
 <div id="dbflight" class="hidden">
   <label for="DbTarget">DB Flight target name (optional override)</label><input id="DbTarget" placeholder="Leave blank to use active solution">
   <small>Leave blank to resolve the active/last Visual Studio solution using DbFlightRecorderConfigMappings in settings.json. Set a name to override with an existing DbFlightRecorderTargets entry. Connection-string passwords are never displayed.</small>
+</div>
+<div id="perfmon" class="hidden">
+  <label for="PerfMonCollectorName">PerfMon Data Collector Set name</label>
+  <input id="PerfMonCollectorName" placeholder="Leave blank for global PerfMonCollectorName">
+  <small>Use the exact collector name shown by <code>logman query</code>. This key toggles the existing collector; it does not create one.</small>
 </div>
 <div id="vscode" class="hidden">
   <label><input id="FocusChat" class="checkbox" type="checkbox"> Focus Copilot Chat (Ctrl+Alt+I)</label>
@@ -48,7 +53,7 @@ fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:au
 <script>
 (function () {
   let ws = null, context = '', action = '', saved = {}, timer = 0;
-  const fields = ['Label','TeamId','ChannelId','ChannelUrl','SolutionPath','DbTarget'];
+  const fields = ['Label','TeamId','ChannelId','ChannelUrl','SolutionPath','DbTarget','PerfMonCollectorName'];
   const get = id => document.getElementById(id);
   function refresh() {
     fields.forEach(id => { const field=get(id); if(field) field.value = saved[id] || ''; });
@@ -77,10 +82,10 @@ fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:au
     } catch (_) { saved={}; }
     const target = action.endsWith('teamschannel') ? 'teams' :
         action.endsWith('opensolution') ? 'solution' :
-        action.endsWith('openvscode') ? 'vscode' : action.endsWith('sql.format') ? 'sql' : action.endsWith('dbflight') ? 'dbflight' : action.endsWith('investigate') ? 'investigate' : 'slot';
+        action.endsWith('openvscode') ? 'vscode' : action.endsWith('sql.format') ? 'sql' : action.endsWith('dbflight') ? 'dbflight' : action.endsWith('perfmon.toggle') ? 'perfmon' : action.endsWith('investigate') ? 'investigate' : 'slot';
     get(target).classList.remove('hidden');
     // Slot actions can use either Teams or Solution fields if desired.
-    if(target==='slot') { get('teams').classList.remove('hidden'); get('solution').classList.remove('hidden'); get('vscode').classList.remove('hidden'); get('dbflight').classList.remove('hidden'); get('sql').classList.remove('hidden'); }
+    if(target==='slot') { get('teams').classList.remove('hidden'); get('solution').classList.remove('hidden'); get('vscode').classList.remove('hidden'); get('dbflight').classList.remove('hidden'); get('perfmon').classList.remove('hidden'); get('sql').classList.remove('hidden'); }
     refresh();
     ws=new WebSocket('ws://127.0.0.1:'+port);
     ws.onopen=() => { ws.send(JSON.stringify({event:registerEvent,uuid})); get('status').textContent='Ready'; };

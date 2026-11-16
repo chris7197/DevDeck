@@ -9,6 +9,7 @@
   "LastErrorSearchFileCount": 10,
   "LiveRefreshSeconds": 10,
   "RememberLastApplicationProfile": true,
+  "PerfMonCollectorName": "",
   "ProfileRules": [
     {
       "Profile": "VisualStudio",
@@ -35,8 +36,7 @@
       "com.chris7197.devdeck.dbflight",
       "com.chris7197.devdeck.closeothers",
       "com.chris7197.devdeck.csharpier.format",
-      "com.chris7197.devdeck.sql.format",
-      "com.chris7197.devdeck.projectdevcmd"
+      "com.chris7197.devdeck.sql.format"
     ],
     "SqlServer": [
       "com.chris7197.devdeck.ssms.newquery",

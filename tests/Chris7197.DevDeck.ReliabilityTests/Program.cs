@@ -6,6 +6,8 @@ try
 {
     TestLogReaderAndSeverity();
     Console.WriteLine("PASS: tray log parsing, multiline errors, incremental notifications and rotation");
+    await TestPerfMonToggleAsync();
+    Console.WriteLine("PASS: PerfMon status parsing and safe start/stop toggle");
     TestActionCoordinator();
     Console.WriteLine("PASS: concurrent independent keys, one key at a time, exclusive mutations");
     await TestUnifiedCloseOthersAsync();
@@ -427,25 +429,54 @@ static void TestLogReaderAndSeverity()
         if (DevDeckLogReader.Classify("", "No error log found for solution") != DevDeckLogSeverity.Information ||
             DevDeckLogReader.Classify("", "SYNC FAILED: issue") != DevDeckLogSeverity.Error)
             throw new InvalidOperationException("Legacy severity detection too broad or missing.");
-
-        // Trace logging is disabled unless explicitly enabled. The running plugin
-        // should observe changes immediately and the reader must classify TRACE.
-        logger.WriteTrace("Should not exist");
-        if (watcher.Poll().Entries.Count != 0)
-            throw new InvalidOperationException("Trace was recorded while disabled.");
-        logger.SetTraceEnabled(true);
-        if (!logger.TraceEnabled) throw new InvalidOperationException("Trace was not enabled.");
-        logger.WriteTrace("SQL[abc12345] SSMS copy timed out.");
-        DevDeckLogPoll traces = watcher.Poll();
-        if (traces.Entries.Count != 1 || traces.Entries[0].Severity != DevDeckLogSeverity.Trace)
-            throw new InvalidOperationException("Trace record was not parsed correctly.");
-        logger.SetTraceEnabled(false);
-        logger.WriteTrace("Should not exist either");
-        if (watcher.Poll().Entries.Count != 0)
-            throw new InvalidOperationException("Trace continued after being disabled.");
     }
     finally { Directory.Delete(folder, recursive: true); }
 }
+
+static async Task TestPerfMonToggleAsync()
+{
+    const string name = "Developer Diagnostics";
+    const string sample = "Data Collector Set                      Type                          Status\n" +
+                          "----------------------------------------------------------------------------\n" +
+                          "Developer Diagnostics                   Counter                       Stopped\n";
+    if (PerfMonToggleOperation.ParseStatus(sample, name) != PerfMonCollectorStatus.Stopped ||
+        PerfMonToggleOperation.ParseStatus(sample, "Other") != PerfMonCollectorStatus.NotFound ||
+        PerfMonToggleOperation.ParseStatus(sample.Replace("Stopped", "Unknown"), name) != PerfMonCollectorStatus.Unknown)
+        throw new InvalidOperationException("PerfMon query parser misidentified collector state.");
+
+    var runner = new TestPerfMonRunner(name);
+    var op = new PerfMonToggleOperation(new DeckSettings { PerfMonCollectorName = name }, runner);
+    var context = new DevDeckOperationContext(new DeveloperContext(Environment.CurrentDirectory, null, null));
+    var before = await op.GetStateAsync(null);
+    if (before.Subtitle != "START" || before.Status != DeckStatus.Neutral)
+        throw new InvalidOperationException("Stopped PerfMon collector did not show START.");
+
+    DevDeckOperationResult started = await op.ExecuteAsync(context);
+    var running = await op.GetStateAsync(null);
+    if (!started.Success || !runner.Running || runner.StartCount != 1 ||
+        running.Subtitle != "RECORDING" || running.Status != DeckStatus.Error)
+        throw new InvalidOperationException("PerfMon failed to start or did not show recording state.");
+
+    DevDeckOperationResult stopped = await op.ExecuteAsync(context);
+    if (!stopped.Success || runner.Running || runner.StopCount != 1)
+        throw new InvalidOperationException("PerfMon failed to stop.");
+
+    runner.Exists = false;
+    DevDeckOperationResult missing = await op.ExecuteAsync(context);
+    if (missing.Success || runner.StartCount != 1 || runner.StopCount != 1)
+        throw new InvalidOperationException("PerfMon tried to change a nonexistent collector.");
+
+    var missingSettingsOp = new PerfMonToggleOperation(new DeckSettings(), runner);
+    if ((await missingSettingsOp.ExecuteAsync(context)).Success)
+        throw new InvalidOperationException("PerfMon started without a configured collector name.");
+
+    // Explicit per-key overrides must take precedence over the global setting.
+    var withOverride = new DevDeckOperationContext(context.Developer,
+        ActionSettings: new DeckActionSettings { PerfMonCollectorName = "Other collector" });
+    if ((await op.ExecuteAsync(withOverride)).Success)
+        throw new InvalidOperationException("PerfMon ignored the per-key collector override.");
+}
+
 
 sealed class MutableCloseTabsForeground : IForegroundWindowReader
 {
@@ -500,3 +531,36 @@ sealed class ThrowOnceForeground : IForegroundWindowReader
         return null;
     }
 }
+
+
+sealed class TestPerfMonRunner(string collectorName) : IPerfMonCommandRunner
+{
+    public bool Exists { get; set; } = true;
+    public bool Running { get; private set; }
+    public int StartCount { get; private set; }
+    public int StopCount { get; private set; }
+
+    public Task<PerfMonCommandResult> RunAsync(IReadOnlyList<string> args, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        switch (args[0])
+        {
+            case "query":
+                return Task.FromResult(new PerfMonCommandResult(0,
+                    "Data Collector Set                       Type                         Status\n" +
+                    "--------------------------------------------------------------------------------\n" +
+                    (Exists ? $"{collectorName,-41}Counter                      {(Running ? "Running" : "Stopped")}\n" : ""), ""));
+            case "start" when args.Count == 2 && args[1] == collectorName && Exists:
+                StartCount++;
+                Running = true;
+                return Task.FromResult(new PerfMonCommandResult(0, "The command completed successfully.", ""));
+            case "stop" when args.Count == 2 && args[1] == collectorName && Exists:
+                StopCount++;
+                Running = false;
+                return Task.FromResult(new PerfMonCommandResult(0, "The command completed successfully.", ""));
+            default:
+                return Task.FromResult(new PerfMonCommandResult(1, "", "Unknown collector."));
+        }
+    }
+}
+

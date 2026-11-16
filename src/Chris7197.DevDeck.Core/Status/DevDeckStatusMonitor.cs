@@ -172,6 +172,7 @@ public sealed class DevDeckStatusMonitor(
         {
             Label = string.IsNullOrWhiteSpace(overrides.Label) ? defaults.Label : overrides.Label,
             DbTarget = string.IsNullOrWhiteSpace(overrides.DbTarget) ? defaults.DbTarget : overrides.DbTarget,
+            PerfMonCollectorName = string.IsNullOrWhiteSpace(overrides.PerfMonCollectorName) ? defaults.PerfMonCollectorName : overrides.PerfMonCollectorName,
             TeamId = string.IsNullOrWhiteSpace(overrides.TeamId) ? defaults.TeamId : overrides.TeamId,
             ChannelId = string.IsNullOrWhiteSpace(overrides.ChannelId) ? defaults.ChannelId : overrides.ChannelId,
             ChannelUrl = string.IsNullOrWhiteSpace(overrides.ChannelUrl) ? defaults.ChannelUrl : overrides.ChannelUrl,

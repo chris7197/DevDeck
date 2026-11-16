@@ -32,7 +32,7 @@ public sealed class DeckSettings
     public int MaxReportsPerKind { get; set; } = 200;
     /// <summary>Maximum concurrent controller operations. Project-changing operations remain exclusive.</summary>
     public int MaxConcurrentActions { get; set; } = 3;
-
+    public string PerfMonCollectorName { get; set; } = "DevDiagnosticsV2";
     /// <summary>Automatically keep the last recognised app profile while Desktop/DevDeck is foreground.</summary>
     public bool RememberLastApplicationProfile { get; set; } = true;
     // First matching rule wins. Override these generic browser rules in settings.local.json.

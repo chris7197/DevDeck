@@ -7,6 +7,7 @@ public sealed record DeckActionSettings
 {
     public string? Label { get; init; }
     public string? DbTarget { get; init; }
+    public string? PerfMonCollectorName { get; init; }
     public string? TeamId { get; init; }
     public string? ChannelId { get; init; }
     public string? ChannelUrl { get; init; }
