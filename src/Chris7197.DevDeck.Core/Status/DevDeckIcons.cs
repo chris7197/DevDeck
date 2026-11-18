@@ -17,6 +17,8 @@ public static class DevDeckIcons
     public const string OpenSolution = "open-solution";
     public const string Investigate = "investigate";
     public const string DbFlight = "db-flight";
+    public const string PerfMon = "perfmon";
+    public const string ProjectDevCmd = "project-devcmd";
     public const string CloseOthers = "close-others";
     public const string FormatCSharp = "format-csharp";
     public const string FormatSql = "format-sql";

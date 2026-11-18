@@ -6,10 +6,13 @@ public sealed class DeckSettings
 {
     public TeamsAuthSettings Teams { get; set; } = new();
     public SqlFormattingSettings SqlFormatting { get; set; } = new();
+    public Dictionary<string, string> InvestigationSqlLookups { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<OpenProjectFileTarget> OpenProjectFileTargets { get; set; } = [];
     public List<RunProjectTarget> RunProjectTargets { get; set; } = [];
     public List<DbFlightRecorderTarget> DbFlightRecorderTargets { get; set; } = [];
     public List<DbFlightRecorderConfigMapping> DbFlightRecorderConfigMappings { get; set; } = [];
+    // First matching solution-path pattern wins. Paths may be files or directories.
+    public List<LogMappingSettings> LogMappings { get; set; } = [];
     // Optional per-slot defaults for the simulator and dynamic profile slots.
     // Key format: "VisualStudio/5" or "Default/2" (1-based slot number).
     public Dictionary<string, DeckActionSettings> ButtonPresets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -22,6 +25,8 @@ public sealed class DeckSettings
     public bool SaveAllBeforeCommit { get; set; } = true;
     public int GitCommandTimeoutSeconds { get; set; } = 180;
     public int LiveRefreshSeconds { get; set; } = 10;
+    // Name of an existing Windows Performance Monitor Data Collector Set.
+    public string PerfMonCollectorName { get; set; } = "";
     /// <summary>Age limit for locally generated SQL and clipboard reports.</summary>
     public int ReportRetentionDays { get; set; } = 30;
     /// <summary>Maximum completed captures retained in each report category.</summary>

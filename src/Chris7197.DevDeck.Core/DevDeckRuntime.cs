@@ -69,7 +69,7 @@ public sealed class DevDeckRuntime
                     "CTRL+ALT+SHIFT+W", DevDeckIcons.CloseOthers, "SqlServer", Profiles, foreground)),
             new FormatCSharpOperation(documents),
             new FormatSqlOperation(foreground, visualStudio, VisualStudioCom,
-                new chris7197SqlFormatter(), settings),
+                new chris7197SqlFormatter(), settings, log),
             new OpenSolutionOperation(visualStudio),
             new SmartInvestigateOperation(Investigations, navigator, Prompts, settings.SmartInvestigateAmbiguousCodePattern),
             new DbFlightRecorderOperation(FlightRecorder),
