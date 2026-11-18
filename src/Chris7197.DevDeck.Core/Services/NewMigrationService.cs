@@ -3,7 +3,10 @@ using System.Text;
 
 namespace chris7197.DevDeck.Core;
 
-public sealed record MigrationPreview(string ProjectFile, string MigrationFile, string MigrationNamespace, long Version, int OpenAtLine = Consts.OpenAtLineDefault, int OpenAtOffset = Consts.OpenAtOffsetDefault);
+public sealed record MigrationPreview(string ProjectFile, string MigrationFile, string MigrationNamespace, long Version, int OpenAtLine = Consts.OpenAtLineDefault, int OpenAtOffset = Consts.OpenAtOffsetDefault, string ExtraUsings = "")
+{
+}
+
 public sealed record MigrationCreation(MigrationPreview Preview, MigrationIncludeMethod IncludeMethod);
 
 /// <summary>Generates your existing FluentMigrator naming convention without running migrations.</summary>
@@ -32,8 +35,8 @@ public sealed class NewMigrationService(MigrationProjectResolver resolver, DeckL
     {
         MigrationPreview preview = Preview(solutionPath);
         Directory.CreateDirectory(Path.GetDirectoryName(preview.MigrationFile)!);
-        string source = $@"using chris7197.DBMigrator.Micross.DBMigratorTemplate;
-using FluentMigrator;
+        var extraUsings = string.IsNullOrEmpty(preview.ExtraUsings) ? "" : preview.ExtraUsings + Environment.NewLine;
+        string source = $@"{extraUsings}using FluentMigrator;
 using System;
 
 namespace {preview.MigrationNamespace}

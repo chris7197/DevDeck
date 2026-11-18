@@ -3,10 +3,22 @@ param(
     [string]$InstallPath = '',
     [switch]$Install,
     [switch]$ResetSettings,
-    [switch]$InstallTray
+    [switch]$InstallTray,
+    [switch]$UseLocalSettings
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
+
+# Local settings are for installation only; never include them in dist.
+if ($UseLocalSettings) {
+    if ($ResetSettings) { throw 'UseLocalSettings and ResetSettings cannot be combined.' }
+    if (-not $Install) { throw 'UseLocalSettings requires -Install.' }
+    $localSettingsPath = Join-Path $root 'plugin/settings.local.json'
+    if (-not (Test-Path -LiteralPath $localSettingsPath -PathType Leaf)) {
+        throw "Local settings file not found: $localSettingsPath"
+    }
+    $null = Get-Content -LiteralPath $localSettingsPath -Raw | ConvertFrom-Json
+}
 $pluginFolder = 'com.chris7197.devdeck.sdPlugin'
 $out = Join-Path $root (Join-Path 'dist' $pluginFolder)
 # Stale published binaries from a previous release must not enter the new package.
@@ -30,15 +42,6 @@ if ($LASTEXITCODE -ne 0) { throw 'DevDeck overlay publish failed.' }
 
 Copy-Item (Join-Path $root 'plugin/manifest.json') (Join-Path $out 'manifest.json') -Force
 Copy-Item (Join-Path $root 'plugin/settings.json') (Join-Path $out 'settings.json') -Force
-# Local settings are intentionally not tracked. Carry them into the *ignored* package
-# as a separate override, never merge private values into the public template.
-$localSettings = Join-Path $root 'plugin/settings.local.json'
-if (Test-Path -LiteralPath $localSettings -PathType Leaf) {
-    $null = Get-Content -LiteralPath $localSettings -Raw | ConvertFrom-Json
-    Copy-Item -LiteralPath $localSettings -Destination (Join-Path $out 'settings.local.json') -Force
-    Write-Host 'Included local settings override (private; distribution output is Git-ignored).'
-}
-
 Copy-Item (Join-Path $root 'plugin/property-inspector.html') (Join-Path $out 'property-inspector.html') -Force
 New-Item -ItemType Directory -Force (Join-Path $out 'scripts') | Out-Null
 Copy-Item (Join-Path $root 'scripts/Format-CSharp.ps1') (Join-Path $out 'scripts/Format-CSharp.ps1') -Force
@@ -49,7 +52,7 @@ Write-Host "Packaged plugin: $out"
 
 if ($Install) {
     & (Join-Path $PSScriptRoot 'Install-Plugin.ps1') -SourcePath $out `
-        -InstallPath $InstallPath -ResetSettings:$ResetSettings
+        -InstallPath $InstallPath -ResetSettings:$ResetSettings -UseLocalSettings:$UseLocalSettings
     if (-not $?) { throw 'DevDeck plugin install failed.' }
 }
 

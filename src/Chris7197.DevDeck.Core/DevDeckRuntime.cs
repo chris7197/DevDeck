@@ -52,6 +52,7 @@ public sealed class DevDeckRuntime
         IForegroundWindowReader foreground = foregroundWindowReader ?? new WindowsForegroundWindowReader();
         Profiles = new DevDeckProfiles(settings, foreground);
         var git = new GitProcess(log, settings.GitCommandTimeoutSeconds);
+        var vsTargets = new VisualStudioTargetService(visualStudio, VisualStudioCom);
         Operations =
         [
             new GitSyncOperation(new GitSyncService(settings, git, log), log, settings.SaveAllBeforeCommit),
@@ -60,17 +61,18 @@ public sealed class DevDeckRuntime
             new NewMigrationOperation(Migrations),
             new TeamsChannelOperation(Teams),
             new OpenInVsCodeOperation(settings, documents),
+            new OpenProjectFileOperation(settings, vsTargets),
+            new RunProjectOperation(settings, vsTargets, new VisualStudioProjectBuilder(log), Prompts),
             new CloseOtherTabsOperation(foreground, visualStudio,
                 new CloseOtherVisualStudioTabsOperation(VisualStudioCom),
                 new ShortcutOperation(CloseOtherTabsOperation.OldSsmsActionId, "Close Others",
                     "CTRL+ALT+SHIFT+W", DevDeckIcons.CloseOthers, "SqlServer", Profiles, foreground)),
             new FormatCSharpOperation(documents),
             new FormatSqlOperation(foreground, visualStudio, VisualStudioCom,
-                new chris7197SqlFormatter(), settings, Log),
+                new chris7197SqlFormatter(), settings),
             new OpenSolutionOperation(visualStudio),
             new SmartInvestigateOperation(Investigations, navigator, Prompts, settings.SmartInvestigateAmbiguousCodePattern),
             new DbFlightRecorderOperation(FlightRecorder),
-            new PerfMonToggleOperation(settings),
             new ShortcutOperation("com.chris7197.devdeck.ssms.newquery", "New Query", "CTRL+N", DevDeckIcons.SqlNewQuery, "SqlServer", Profiles, foreground),
             new ShortcutOperation("com.chris7197.devdeck.ssms.execute", "Execute SQL", "F5", DevDeckIcons.SqlExecute, "SqlServer", Profiles, foreground),
             new ShortcutOperation("com.chris7197.devdeck.ssms.plan", "Actual Plan", "CTRL+M", DevDeckIcons.SqlPlan, "SqlServer", Profiles, foreground),

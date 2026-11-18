@@ -17,7 +17,8 @@ public sealed class DevDeckActionCoordinator(int maxConcurrent = 3)
         bool mutation = operationId is "com.chris7197.devdeck.syncmain" or
             "com.chris7197.devdeck.newmigration" or
             "com.chris7197.devdeck.csharpier.format" or
-            "com.chris7197.devdeck.closeothers";
+            "com.chris7197.devdeck.closeothers" or
+            OpenProjectFileOperation.ActionId or RunProjectOperation.ActionId;
         lock (_sync)
         {
             if (_busyKeys.Contains(keyContext) || _running >= maxConcurrent ||

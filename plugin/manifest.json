@@ -89,6 +89,50 @@
       ]
     },
     {
+      "UUID": "com.chris7197.devdeck.openprojectfile",
+      "Icon": "images/open-project-file-action.png",
+      "Name": "Open Project File",
+      "Tooltip": "Open a configured solution-relative file with the selected Visual Studio editor",
+      "States": [
+        {
+          "Image": "images/open-project-file-key.png",
+          "Title": "Open\nFile",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
+      "UUID": "com.chris7197.devdeck.runproject",
+      "Icon": "images/run-project-action.png",
+      "Name": "Run Project (Debug)",
+      "Tooltip": "Rebuild or build a configured project and start debugging in its Visual Studio instance",
+      "States": [
+        {
+          "Image": "images/run-project-key.png",
+          "Title": "Run\nProject",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
+    },
+    {
       "UUID": "com.chris7197.devdeck.slot01",
       "Icon": "images/action.png",
       "Name": "Profile Slot 01",
@@ -547,29 +591,6 @@
         "Keypad"
       ],
       "PropertyInspectorPath": "property-inspector.html"
-    },
-    {
-      "UUID": "com.chris7197.devdeck.perfmon.toggle",
-      "Icon": "images/perfmon-action.png",
-      "Name": "Toggle PerfMon Logging",
-      "Tooltip": "Start or stop a configured Windows PerfMon Data Collector Set with live recording status.",
-      "States": [
-        {
-          "Image": "images/perfmon-key.png",
-          "Title": "PerfMon",
-          "FontSize": "13",
-          "FontStyle": "Bold",
-          "TitleAlignment": "bottom",
-          "TitleColor": "#FFFFFF"
-        }
-      ],
-      "Settings": {},
-      "PropertyInspectorPath": "property-inspector.html",
-      "UserTitleEnabled": false,
-      "SupportedInMultiActions": false,
-      "Controllers": [
-        "Keypad"
-      ]
     },
     {
       "UUID": "com.chris7197.devdeck.closeothers",

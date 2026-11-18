@@ -12,11 +12,11 @@ public static class DevDeckIcons
     public const string NewMigration = "new-migration";
     public const string TeamsChannel = "teams-channel";
     public const string OpenVsCode = "open-vscode";
-    public const string ProjectDevCmd = "project-devcmd";
+    public const string OpenProjectFile = "open-project-file";
+    public const string RunProject = "run-project";
     public const string OpenSolution = "open-solution";
     public const string Investigate = "investigate";
     public const string DbFlight = "db-flight";
-    public const string PerfMon = "perfmon";
     public const string CloseOthers = "close-others";
     public const string FormatCSharp = "format-csharp";
     public const string FormatSql = "format-sql";
@@ -58,11 +58,11 @@ public static class DevDeckIcons
         NewMigration => "Mig",
         TeamsChannel => "Tm",
         OpenVsCode => "Code",
-        ProjectDevCmd => ">_",
         OpenSolution => "VS",
+        OpenProjectFile => "XML",
+        RunProject => "Run",
         Investigate => "?",
         DbFlight => "DB",
-        PerfMon => "Perf",
         CloseOthers => "Close",
         FormatCSharp => "C#",
         FormatSql => "SQL",

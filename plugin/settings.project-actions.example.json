@@ -1,0 +1,21 @@
+{
+  "OpenProjectFileTargets": [
+    {
+      "PathFilter": "*BitMan*",
+      "Label": "EDMX",
+      "FilePath": "BitSuite.MainDB.EF/MainDBEntities.edmx",
+      "Editor": "XML (Text) Editor"
+    }
+  ],
+  "RunProjectTargets": [
+    {
+      "PathFilter": "*BitMan*",
+      "Label": "DB Migrator",
+      "ProjectPath": "BitSuite.DbMigrator/BitSuite.DbMigrator.csproj",
+      "BuildMode": "Rebuild",
+      "SaveAll": true,
+      "Confirm": true,
+      "BuildTimeoutSeconds": 600
+    }
+  ]
+}

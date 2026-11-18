@@ -4,9 +4,20 @@ param(
     [string]$InstallPath = '',
     [switch]$ResetSettings,
     [switch]$SimulateFailureAfterBackup,
-    [switch]$SkipRunningProcessCheck
+    [switch]$SkipRunningProcessCheck,
+    [switch]$UseLocalSettings
 )
 $ErrorActionPreference = 'Stop'
+if ($UseLocalSettings -and $ResetSettings) {
+    throw 'UseLocalSettings and ResetSettings cannot be combined.'
+}
+$localSettingsPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'plugin/settings.local.json'
+if ($UseLocalSettings) {
+    if (-not (Test-Path -LiteralPath $localSettingsPath -PathType Leaf)) {
+        throw "Local settings file not found: $localSettingsPath"
+    }
+    $null = Get-Content -LiteralPath $localSettingsPath -Raw | ConvertFrom-Json
+}
 $pluginFolder = 'com.chris7197.devdeck.sdPlugin'
 if (-not $InstallPath) { $InstallPath = Join-Path $env:APPDATA 'HotSpot/StreamDock/plugins' }
 $SourcePath = [IO.Path]::GetFullPath($SourcePath)
@@ -27,10 +38,6 @@ function Confirm-Package([string]$Folder) {
     }
     $manifest = Get-Content -LiteralPath (Join-Path $Folder 'manifest.json') -Raw | ConvertFrom-Json
     $null = Get-Content -LiteralPath (Join-Path $Folder 'settings.json') -Raw | ConvertFrom-Json
-    $localConfig = Join-Path $Folder 'settings.local.json'
-    if (Test-Path -LiteralPath $localConfig -PathType Leaf) {
-        $null = Get-Content -LiteralPath $localConfig -Raw | ConvertFrom-Json
-    }
     if (-not $manifest.Actions -or $manifest.Actions.Count -eq 0) {
         throw 'Invalid DevDeck package: manifest has no actions.'
     }
@@ -49,14 +56,16 @@ try {
     New-Item -ItemType Directory -Force -Path $InstallPath | Out-Null
     # Stage a COMPLETE install before altering the old one.
     Copy-Item -LiteralPath $SourcePath -Destination $stage -Recurse -Force
-    if (-not $ResetSettings -and (Test-Path -LiteralPath (Join-Path $dest 'settings.json') -PathType Leaf)) {
+    if ($UseLocalSettings) {
+        Copy-Item -LiteralPath $localSettingsPath -Destination (Join-Path $stage 'settings.json') -Force
+        Write-Host "Using local settings: $localSettingsPath"
+    }
+    elseif (-not $ResetSettings -and (Test-Path -LiteralPath (Join-Path $dest 'settings.json') -PathType Leaf)) {
         Copy-Item -LiteralPath (Join-Path $dest 'settings.json') -Destination (Join-Path $stage 'settings.json') -Force
         Write-Host 'Preserving existing installed settings.json.'
     }
-    if (-not $ResetSettings -and -not (Test-Path -LiteralPath (Join-Path $stage 'settings.local.json') -PathType Leaf) -and
-        (Test-Path -LiteralPath (Join-Path $dest 'settings.local.json') -PathType Leaf)) {
-        Copy-Item -LiteralPath (Join-Path $dest 'settings.local.json') -Destination (Join-Path $stage 'settings.local.json') -Force
-        Write-Host 'Preserving existing private settings.local.json.' 
+    else {
+        Write-Host 'Using packaged settings.json.'
     }
     Confirm-Package $stage
 

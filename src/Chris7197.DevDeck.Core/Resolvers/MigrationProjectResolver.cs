@@ -25,9 +25,10 @@ public sealed class MigrationTargetSettings
     /// Optional. Defaults to 1. The offset to open the new migration file at in Visual Studio.
     /// </summary>
     public int OpenAtOffset { get; set; } = Consts.OpenAtOffsetDefault;
+    public string ExtraUsings { get; set; } = "";
 }
 
-public sealed record MigrationProject(string ProjectFile, string RootNamespace, string RelativeMigrationFolder = "", int OpenAtLine = Consts.OpenAtLineDefault, int OpenAtOffset = Consts.OpenAtOffsetDefault)
+public sealed record MigrationProject(string ProjectFile, string RootNamespace, string RelativeMigrationFolder = "", int OpenAtLine = Consts.OpenAtLineDefault, int OpenAtOffset = Consts.OpenAtOffsetDefault, string ExtraUsings = "")
 {
     public string ProjectDirectory => Path.GetDirectoryName(ProjectFile)!;
     public string MigratorDirectory => Path.Combine(ProjectDirectory, RelativeMigrationFolder);
@@ -57,7 +58,8 @@ public sealed class MigrationProjectResolver(DeckSettings settings)
                 GetNamespace(project, configured.RootNamespace),
                 configured.RelativeMigratorFolder,
                 configured.OpenAtLine,
-                configured.OpenAtOffset);
+                configured.OpenAtOffset,
+                configured.ExtraUsings);
         }
 
         // Otherwise, automatically discover the migration project.
@@ -87,7 +89,8 @@ public sealed class MigrationProjectResolver(DeckSettings settings)
             GetNamespace(discoveredProject, configured?.RootNamespace),
             configured?.RelativeMigratorFolder ?? string.Empty,
             configured?.OpenAtLine ?? Consts.OpenAtLineDefault,
-            configured?.OpenAtOffset ?? Consts.OpenAtOffsetDefault);
+            configured?.OpenAtOffset ?? Consts.OpenAtOffsetDefault,
+            configured?.ExtraUsings ?? string.Empty);
     }
 
     private static IEnumerable<string> ReadSolutionProjects(string solutionPath, string baseDir)
