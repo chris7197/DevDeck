@@ -73,6 +73,7 @@ public sealed class DevDeckRuntime
             new OpenSolutionOperation(visualStudio),
             new SmartInvestigateOperation(Investigations, navigator, Prompts, settings.SmartInvestigateAmbiguousCodePattern),
             new DbFlightRecorderOperation(FlightRecorder),
+            new PerfMonToggleOperation(settings),
             new ShortcutOperation("com.chris7197.devdeck.ssms.newquery", "New Query", "CTRL+N", DevDeckIcons.SqlNewQuery, "SqlServer", Profiles, foreground),
             new ShortcutOperation("com.chris7197.devdeck.ssms.execute", "Execute SQL", "F5", DevDeckIcons.SqlExecute, "SqlServer", Profiles, foreground),
             new ShortcutOperation("com.chris7197.devdeck.ssms.plan", "Actual Plan", "CTRL+M", DevDeckIcons.SqlPlan, "SqlServer", Profiles, foreground),

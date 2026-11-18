@@ -6,7 +6,7 @@
 body { font-family: Segoe UI, sans-serif; font-size: 12px; color: #e8e8e8; background: #292929; padding: 10px; }
 label { display:block; margin: 10px 0 4px; } input { width: 100%; box-sizing: border-box; padding: 6px; background: #181818; border: 1px solid #777; border-radius: 3px; color: white; }
 small { color: #bbb; display:block; margin: 8px 0; line-height: 1.5; }
-fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:auto; }
+fieldset { border:0; padding:0; margin:0; } select { width:100%; background:#181818; color:white; padding:6px; box-sizing:border-box; } .hidden { display:none; } .checkbox { width:auto; }
 </style>
 </head>
 <body>
@@ -28,11 +28,6 @@ fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:au
   <label for="DbTarget">DB Flight target name (optional override)</label><input id="DbTarget" placeholder="Leave blank to use active solution">
   <small>Leave blank to resolve the active/last Visual Studio solution using DbFlightRecorderConfigMappings in settings.json. Set a name to override with an existing DbFlightRecorderTargets entry. Connection-string passwords are never displayed.</small>
 </div>
-<div id="perfmon" class="hidden">
-  <label for="PerfMonCollectorName">PerfMon Data Collector Set name</label>
-  <input id="PerfMonCollectorName" placeholder="Leave blank for global PerfMonCollectorName">
-  <small>Use the exact collector name shown by <code>logman query</code>. This key toggles the existing collector; it does not create one.</small>
-</div>
 <div id="vscode" class="hidden">
   <label><input id="FocusChat" class="checkbox" type="checkbox"> Focus Copilot Chat (Ctrl+Alt+I)</label>
   <small>Opens the active Visual Studio solution directory in VS Code. The chat shortcut is sent only if VS Code becomes foreground.</small>
@@ -46,30 +41,116 @@ fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:au
   </select>
   <small>Removing dbo. from object references is not whitespace-only formatting; it can change how SQL Server resolves names.</small>
 </div>
+<div id="projectfile" class="hidden">
+  <label for="ProjectFileUseCustom">Target source</label>
+  <select id="ProjectFileUseCustom">
+    <option value="">Use solution mappings / profile preset</option>
+    <option value="true">Configure this button</option>
+    <option value="false">Use solution mappings only</option>
+  </select>
+  <fieldset id="projectfile-custom" class="hidden">
+    <label for="ProjectFilePathFilter">Solution path filter (optional)</label>
+    <input id="ProjectFilePathFilter" placeholder="*BitMan*">
+    <label for="ProjectFilePath">File path (relative to solution)</label>
+    <input id="ProjectFilePath" placeholder="BitSuite.MainDB.EF/MainDBEntities.edmx">
+    <label for="ProjectFileEditor">Visual Studio editor (optional)</label>
+    <input id="ProjectFileEditor" list="projectfile-editors" placeholder="XML (Text) Editor">
+    <datalist id="projectfile-editors">
+      <option value="XML (Text) Editor"></option>
+      <option value="Source Code (Text) Editor"></option>
+      <option value="Binary Editor"></option>
+    </datalist>
+    <small>Choose or type the editor name shown in Visual Studio's Open With dialog. Leave blank for the default editor. A blank solution filter matches all solutions; * is a wildcard.</small>
+  </fieldset>
+  <small>With solution mappings, the target is taken from OpenProjectFileTargets in settings.json. Custom targets never fall back to a different mapped file.</small>
+</div>
+<div id="runproject" class="hidden">
+  <label for="RunProjectUseCustom">Target source</label>
+  <select id="RunProjectUseCustom">
+    <option value="">Use solution mappings / profile preset</option>
+    <option value="true">Configure this button</option>
+    <option value="false">Use solution mappings only</option>
+  </select>
+  <fieldset id="runproject-custom" class="hidden">
+    <label for="RunProjectPathFilter">Solution path filter (optional)</label>
+    <input id="RunProjectPathFilter" placeholder="*BitMan*">
+    <label for="RunProjectPath">Project path (relative to solution)</label>
+    <input id="RunProjectPath" placeholder="BitSuite.DbMigrator/BitSuite.DbMigrator.csproj">
+    <label for="RunProjectBuildMode">Build mode</label>
+    <select id="RunProjectBuildMode">
+      <option value="Rebuild">Rebuild</option>
+      <option value="Build">Build (incremental)</option>
+      <option value="None">Skip explicit build</option>
+    </select>
+    <label><input id="RunProjectSaveAll" class="checkbox" type="checkbox"> Save all files before building</label>
+    <label><input id="RunProjectConfirm" class="checkbox" type="checkbox"> Require confirmation before running</label>
+    <label for="RunProjectBuildTimeoutSeconds">Build timeout (seconds)</label>
+    <input id="RunProjectBuildTimeoutSeconds" type="number" min="10" max="3600" step="1" value="600">
+    <small>Starts the selected project with the debugger attached, without changing the startup project. The solution filter supports *; blank matches all solutions.</small>
+  </fieldset>
+  <small>With solution mappings, the target is taken from RunProjectTargets in settings.json. Custom targets never fall back to a different mapped project.</small>
+</div>
 <div id="slot" class="hidden">
   <small>Profile slots change behaviour with the focused application. Set the slot's channel or solution overrides here, or use ButtonPresets in plugin/settings.json for profile-specific defaults.</small>
 </div>
 <small id="status">Connecting to Stream Dock...</small>
 <script>
 (function () {
-  let ws = null, context = '', action = '', saved = {}, timer = 0;
-  const fields = ['Label','TeamId','ChannelId','ChannelUrl','SolutionPath','DbTarget','PerfMonCollectorName'];
+  let ws = null, context = '', action = '', target = '', saved = {}, timer = 0;
+  const fields = ['Label','TeamId','ChannelId','ChannelUrl','SolutionPath','DbTarget'];
   const get = id => document.getElementById(id);
+  const projectGroups = [
+    { section: 'projectfile', mode: 'ProjectFileUseCustom', text: ['ProjectFilePathFilter','ProjectFilePath','ProjectFileEditor'] },
+    { section: 'runproject', mode: 'RunProjectUseCustom', text: ['RunProjectPathFilter','RunProjectPath'] }
+  ];
+  const enabled = group => target === group.section || target === 'slot';
+  function showCustom() {
+    projectGroups.forEach(group => {
+      get(group.section+'-custom').classList.toggle('hidden', get(group.mode).value !== 'true');
+    });
+  }
   function refresh() {
     fields.forEach(id => { const field=get(id); if(field) field.value = saved[id] || ''; });
     get('FocusChat').checked = saved.FocusChat !== false;
-    get('SqlRemoveDboPrefixes').value = saved.SqlRemoveDboPrefixes === undefined ? '' : String(saved.SqlRemoveDboPrefixes);
+    get('SqlRemoveDboPrefixes').value = saved.SqlRemoveDboPrefixes == null ? '' : String(saved.SqlRemoveDboPrefixes);
+    projectGroups.forEach(group => {
+      get(group.mode).value = saved[group.mode] == null ? '' : String(saved[group.mode]);
+      group.text.forEach(id => { get(id).value = saved[id] ?? ''; });
+    });
+    get('RunProjectBuildMode').value = saved.RunProjectBuildMode ?? 'Rebuild';
+    get('RunProjectSaveAll').checked = saved.RunProjectSaveAll !== false;
+    get('RunProjectConfirm').checked = saved.RunProjectConfirm !== false;
+    get('RunProjectBuildTimeoutSeconds').value = saved.RunProjectBuildTimeoutSeconds ?? 600;
+    showCustom();
   }
   function save() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    fields.forEach(id => {
-      const element=get(id);
-      if (element) saved[id] = element.value.trim();
+    if ((target === 'runproject' || target === 'slot') && get('RunProjectUseCustom').value === 'true' &&
+        (!get('RunProjectBuildTimeoutSeconds').validity.valid || get('RunProjectBuildTimeoutSeconds').value === '')) {
+      get('status').textContent = 'Enter a build timeout from 10 to 3600 seconds';
+      return;
+    }
+    saved.Label = get('Label').value.trim();
+    if (target !== 'projectfile' && target !== 'runproject') {
+      fields.filter(id => id !== 'Label').forEach(id => { saved[id] = get(id).value.trim(); });
+      saved.FocusChat = get('FocusChat').checked;
+      const stripDbo = get('SqlRemoveDboPrefixes').value;
+      if (stripDbo === '') delete saved.SqlRemoveDboPrefixes;
+      else saved.SqlRemoveDboPrefixes = stripDbo === 'true';
+    }
+    projectGroups.filter(enabled).forEach(group => {
+      const choice = get(group.mode).value;
+      if (choice === '') delete saved[group.mode];
+      else saved[group.mode] = choice === 'true';
+      if (choice !== 'true') return;
+      group.text.forEach(id => { saved[id] = get(id).value.trim(); });
+      if (group.section === 'runproject') {
+        saved.RunProjectBuildMode = get('RunProjectBuildMode').value;
+        saved.RunProjectSaveAll = get('RunProjectSaveAll').checked;
+        saved.RunProjectConfirm = get('RunProjectConfirm').checked;
+        saved.RunProjectBuildTimeoutSeconds = Number(get('RunProjectBuildTimeoutSeconds').value);
+      }
     });
-    saved.FocusChat = get('FocusChat').checked;
-    const stripDbo = get('SqlRemoveDboPrefixes').value;
-    if (stripDbo === '') delete saved.SqlRemoveDboPrefixes;
-    else saved.SqlRemoveDboPrefixes = stripDbo === 'true';
     ws.send(JSON.stringify({event:'setSettings',context,payload:saved}));
     get('status').textContent = 'Saved to this key';
   }
@@ -80,20 +161,28 @@ fieldset { border:0; padding:0; } .hidden { display:none; } .checkbox { width:au
       action=details.action || '';
       saved=details.payload?.settings || {};
     } catch (_) { saved={}; }
-    const target = action.endsWith('teamschannel') ? 'teams' :
+    target = action.endsWith('openprojectfile') ? 'projectfile' : action.endsWith('runproject') ? 'runproject' : action.endsWith('teamschannel') ? 'teams' :
         action.endsWith('opensolution') ? 'solution' :
-        action.endsWith('openvscode') ? 'vscode' : action.endsWith('sql.format') ? 'sql' : action.endsWith('dbflight') ? 'dbflight' : action.endsWith('perfmon.toggle') ? 'perfmon' : action.endsWith('investigate') ? 'investigate' : 'slot';
+        action.endsWith('openvscode') ? 'vscode' : action.endsWith('sql.format') ? 'sql' : action.endsWith('dbflight') ? 'dbflight' : action.endsWith('investigate') ? 'investigate' : 'slot';
     get(target).classList.remove('hidden');
     // Slot actions can use either Teams or Solution fields if desired.
-    if(target==='slot') { get('teams').classList.remove('hidden'); get('solution').classList.remove('hidden'); get('vscode').classList.remove('hidden'); get('dbflight').classList.remove('hidden'); get('perfmon').classList.remove('hidden'); get('sql').classList.remove('hidden'); }
+    if(target==='slot') { get('teams').classList.remove('hidden'); get('solution').classList.remove('hidden'); get('vscode').classList.remove('hidden'); get('dbflight').classList.remove('hidden'); get('sql').classList.remove('hidden'); get('projectfile').classList.remove('hidden'); get('runproject').classList.remove('hidden'); }
     refresh();
     ws=new WebSocket('ws://127.0.0.1:'+port);
     ws.onopen=() => { ws.send(JSON.stringify({event:registerEvent,uuid})); get('status').textContent='Ready'; };
     ws.onmessage=evt => {
-      try { const m=JSON.parse(evt.data); if(m.event==='didReceiveSettings' && m.payload?.settings) { saved=m.payload.settings; refresh(); } }
+      try { const m=JSON.parse(evt.data); if(m.event==='didReceiveSettings' && m.payload?.settings && !timer) { saved=m.payload.settings; refresh(); } }
       catch (_) {}
     };
-    document.querySelectorAll('input, select').forEach(field => field.addEventListener('input', () => { clearTimeout(timer); timer=setTimeout(save,500); }));
+    function flush() { clearTimeout(timer); timer=0; save(); }
+    document.querySelectorAll('input, select').forEach(field => {
+      field.addEventListener('input', () => {
+        showCustom();
+        clearTimeout(timer);
+        timer=setTimeout(flush,350);
+      });
+      field.addEventListener('change', flush);
+    });
   };
 })();
 </script>

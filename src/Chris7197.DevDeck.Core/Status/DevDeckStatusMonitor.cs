@@ -135,7 +135,7 @@ public sealed class DevDeckStatusMonitor(
                     states[stateKey] = state;
                 }
                 if (_lastSent.TryGetValue(keyId, out var old) && old.ActionId == effectiveId && old.State == state) continue;
-                if (!_visible.TryGetValue(keyId, out Key? next) || next.Busy || next.ActionId != key.ActionId) continue;
+                if (!_visible.TryGetValue(keyId, out Key? next) || next.Busy || next != key) continue;
                 try
                 {
                     await publish(keyId, state);
@@ -172,12 +172,22 @@ public sealed class DevDeckStatusMonitor(
         {
             Label = string.IsNullOrWhiteSpace(overrides.Label) ? defaults.Label : overrides.Label,
             DbTarget = string.IsNullOrWhiteSpace(overrides.DbTarget) ? defaults.DbTarget : overrides.DbTarget,
-            PerfMonCollectorName = string.IsNullOrWhiteSpace(overrides.PerfMonCollectorName) ? defaults.PerfMonCollectorName : overrides.PerfMonCollectorName,
             TeamId = string.IsNullOrWhiteSpace(overrides.TeamId) ? defaults.TeamId : overrides.TeamId,
             ChannelId = string.IsNullOrWhiteSpace(overrides.ChannelId) ? defaults.ChannelId : overrides.ChannelId,
             ChannelUrl = string.IsNullOrWhiteSpace(overrides.ChannelUrl) ? defaults.ChannelUrl : overrides.ChannelUrl,
             SolutionPath = string.IsNullOrWhiteSpace(overrides.SolutionPath) ? defaults.SolutionPath : overrides.SolutionPath,
-            FocusChat = overrides.FocusChat ?? defaults.FocusChat
+            FocusChat = overrides.FocusChat ?? defaults.FocusChat,
+            ProjectFileUseCustom = overrides.ProjectFileUseCustom ?? defaults.ProjectFileUseCustom,
+            ProjectFilePathFilter = overrides.ProjectFilePathFilter ?? defaults.ProjectFilePathFilter,
+            ProjectFilePath = overrides.ProjectFilePath ?? defaults.ProjectFilePath,
+            ProjectFileEditor = overrides.ProjectFileEditor ?? defaults.ProjectFileEditor,
+            RunProjectUseCustom = overrides.RunProjectUseCustom ?? defaults.RunProjectUseCustom,
+            RunProjectPathFilter = overrides.RunProjectPathFilter ?? defaults.RunProjectPathFilter,
+            RunProjectPath = overrides.RunProjectPath ?? defaults.RunProjectPath,
+            RunProjectBuildMode = overrides.RunProjectBuildMode ?? defaults.RunProjectBuildMode,
+            RunProjectSaveAll = overrides.RunProjectSaveAll ?? defaults.RunProjectSaveAll,
+            RunProjectConfirm = overrides.RunProjectConfirm ?? defaults.RunProjectConfirm,
+            RunProjectBuildTimeoutSeconds = overrides.RunProjectBuildTimeoutSeconds ?? defaults.RunProjectBuildTimeoutSeconds
         };
 
     private async Task<DevDeckButtonState> QueryStateAsync(IDevDeckOperation operation,

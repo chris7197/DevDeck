@@ -42,7 +42,8 @@ public sealed class DevDeckStatusService(DeckSettings settings, GitProcess git,
     public async Task<DevDeckButtonState> GetConfiguredStateAsync(IDevDeckOperation action,
         DeveloperContext? context, DeckActionSettings? instanceSettings, CancellationToken cancellationToken = default)
     {
-        if (action is TeamsChannelOperation or OpenSolutionOperation or OpenInVsCodeOperation or DbFlightRecorderOperation or PerfMonToggleOperation)
+        if (action is TeamsChannelOperation or OpenSolutionOperation or OpenInVsCodeOperation or DbFlightRecorderOperation
+            or OpenProjectFileOperation or RunProjectOperation)
         {
             try { return await action.GetConfiguredStateAsync(context, instanceSettings, cancellationToken); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }

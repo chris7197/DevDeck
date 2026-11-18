@@ -67,6 +67,77 @@ static void TestVisualStudioProjectTargets()
             throw new Exception("Missing file was unexpectedly accepted.");
         }
         catch (FileNotFoundException) { }
+        // Each physical key has its own settings, and state and execution use the same resolver.
+        DeckActionSettings fileKey = new()
+        {
+            Label = "EDMX", ProjectFileUseCustom = true, ProjectFilePathFilter = "*bitman*",
+            ProjectFilePath = "Data/MainDBEntities.edmx", ProjectFileEditor = "XML (Text) Editor"
+        };
+        DeckActionSettings secondKey = fileKey with { Label = "Other file", ProjectFilePath = "Other.config", ProjectFileEditor = "" };
+        var first = VisualStudioTargetResolver.ResolveFileTarget(rules, solution, fileKey);
+        var second = VisualStudioTargetResolver.ResolveFileTarget(rules, solution, secondKey);
+        if (first is null || second is null || first.FilePath != fileKey.ProjectFilePath || first.Editor != fileKey.ProjectFileEditor ||
+            second.FilePath != secondKey.ProjectFilePath || second.Editor is not null || first.Label != "EDMX")
+            throw new InvalidOperationException("Per-key open-file settings must be independent.");
+        if (VisualStudioTargetResolver.ResolveFileTarget(rules, solution, fileKey with { ProjectFilePathFilter = "*Other*" }) is not null ||
+            VisualStudioTargetResolver.ResolveFileTarget(rules, solution, fileKey with { ProjectFileUseCustom = false }) != rules[0] ||
+            VisualStudioTargetResolver.ResolveFileTarget(rules, solution, null) != rules[0])
+            throw new InvalidOperationException("Custom file filters must never fall back; legacy mappings must remain supported.");
+        try
+        {
+            VisualStudioTargetResolver.ResolveFileTarget(rules, solution, fileKey with { ProjectFilePath = "" });
+            throw new Exception("Incomplete custom file target was unexpectedly accepted.");
+        }
+        catch (InvalidOperationException) { }
+
+        RunProjectTarget[] runRules = [new() { PathFilter = "*BitMan*", ProjectPath = "Other.csproj" }];
+        using var payload = System.Text.Json.JsonDocument.Parse("""
+            {"Label":"DB Migrator","RunProjectUseCustom":true,"RunProjectPathFilter":"*BitMan*",
+             "RunProjectPath":"DB Migrator/DbMigrator.csproj","RunProjectBuildMode":"Build",
+             "RunProjectSaveAll":false,"RunProjectConfirm":false,"RunProjectBuildTimeoutSeconds":90}
+            """);
+        DeckActionSettings runKey = DeckActionSettings.Parse(payload.RootElement)!;
+        var customRun = VisualStudioTargetResolver.ResolveRunTarget(runRules, solution, runKey);
+        if (customRun is null || customRun.ProjectPath != runKey.RunProjectPath || customRun.BuildMode != "Build" ||
+            customRun.SaveAll || customRun.Confirm || customRun.BuildTimeoutSeconds != 90)
+            throw new InvalidOperationException("Per-key run settings did not survive JSON parsing/resolution.");
+        if (VisualStudioTargetResolver.ResolveRunTarget(runRules, solution, runKey with { RunProjectPathFilter = "*Other*" }) is not null ||
+            VisualStudioTargetResolver.ResolveRunTarget(runRules, solution, runKey with { RunProjectUseCustom = false }) != runRules[0] ||
+            VisualStudioTargetResolver.ResolveRunTarget(runRules, solution, null) != runRules[0])
+            throw new InvalidOperationException("Custom run targets must not fall back to another project.");
+        foreach (var invalid in new[] { runKey with { RunProjectPath = "" }, runKey with { RunProjectPath = project },
+            runKey with { RunProjectPath = "File.txt" }, runKey with { RunProjectBuildMode = "Clean" },
+            runKey with { RunProjectBuildTimeoutSeconds = 9 } })
+        {
+            try
+            {
+                VisualStudioTargetResolver.ResolveRunTarget(runRules, solution, invalid);
+                throw new Exception("Invalid custom run target was unexpectedly accepted.");
+            }
+            catch (InvalidOperationException) { }
+        }
+        var defaults = VisualStudioTargetResolver.ResolveRunTarget(runRules, solution, new DeckActionSettings
+        {
+            RunProjectUseCustom = true, RunProjectPath = "DB Migrator/DbMigrator.csproj"
+        });
+        if (defaults is null || !defaults.Confirm || !defaults.SaveAll || defaults.BuildMode != "Rebuild" || defaults.BuildTimeoutSeconds != 600)
+            throw new InvalidOperationException("Custom run defaults must be safe.");
+
+        var settings = new DeckSettings();
+        settings.OpenProjectFileTargets.AddRange(rules);
+        settings.RunProjectTargets.AddRange(runRules);
+        var statusService = new DevDeckStatusService(settings, null!, null!, null!, null!);
+        var context = new DeveloperContext(root, solution, "BitMan");
+        var fileAction = new OpenProjectFileOperation(settings, null!);
+        var runAction = new RunProjectOperation(settings, null!, null!, null!);
+        var fileState = statusService.GetConfiguredStateAsync(fileAction, context, fileKey).GetAwaiter().GetResult();
+        var runState = statusService.GetConfiguredStateAsync(runAction, context, runKey).GetAwaiter().GetResult();
+        var wrongState = statusService.GetConfiguredStateAsync(runAction, context,
+            runKey with { RunProjectPathFilter = "*Other*" }).GetAwaiter().GetResult();
+        if (fileState.Title != "EDMX" || fileState.Subtitle != "Ready" || runState.Title != "DB Migrator" ||
+            runState.Subtitle != "Ready" || wrongState.Status != DeckStatus.Unavailable)
+            throw new InvalidOperationException("Configured status must use the same resolution as execution.");
+
         var snapshot = new VisualStudioProjectBuildContext(123, solution, project, "Debug", "AnyCPU", "Debug");
         var rebuild = VisualStudioProjectBuilder.CreateStartInfo(snapshot, "MSBuild.exe", "Rebuild");
         var build = VisualStudioProjectBuilder.CreateStartInfo(snapshot, "MSBuild.exe", "build");

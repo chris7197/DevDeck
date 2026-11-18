@@ -15,6 +15,18 @@ public sealed record DeckActionSettings
     public bool? FocusChat { get; init; }
     public bool? SqlRemoveDboPrefixes { get; init; }
 
+    public bool? ProjectFileUseCustom { get; init; }
+    public string? ProjectFilePathFilter { get; init; }
+    public string? ProjectFilePath { get; init; }
+    public string? ProjectFileEditor { get; init; }
+    public bool? RunProjectUseCustom { get; init; }
+    public string? RunProjectPathFilter { get; init; }
+    public string? RunProjectPath { get; init; }
+    public string? RunProjectBuildMode { get; init; }
+    public bool? RunProjectSaveAll { get; init; }
+    public bool? RunProjectConfirm { get; init; }
+    public int? RunProjectBuildTimeoutSeconds { get; init; }
+
     public static DeckActionSettings? Parse(JsonElement value)
     {
         if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined) return null;

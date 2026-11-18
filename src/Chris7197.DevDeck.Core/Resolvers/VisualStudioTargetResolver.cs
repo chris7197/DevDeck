@@ -6,6 +6,62 @@ public static class VisualStudioTargetResolver
     public static T? Match<T>(IEnumerable<T> targets, string? solutionPath) where T : VisualStudioTargetSettings =>
         string.IsNullOrWhiteSpace(solutionPath) ? null : targets.FirstOrDefault(t => solutionPath.MatchesPattern(t.PathFilter));
 
+    // Explicit per-key configuration is authoritative. A mismatching or incomplete
+    // custom target must never launch a different target from the global rules.
+    public static OpenProjectFileTarget? ResolveFileTarget(IEnumerable<OpenProjectFileTarget> targets,
+        string? solutionPath, DeckActionSettings? options)
+    {
+        if (options?.ProjectFileUseCustom != true)
+            return Match(targets, solutionPath);
+
+        string filter = NormalizeFilter(options.ProjectFilePathFilter);
+        if (string.IsNullOrWhiteSpace(solutionPath) || !solutionPath.MatchesPattern(filter)) return null;
+        string? path = options.ProjectFilePath?.Trim();
+        if (!IsValidRelativePath(path))
+            throw new InvalidOperationException("Configure a valid solution-relative file path for this key.");
+        string? editor = options.ProjectFileEditor?.Trim();
+        if (editor is not null && editor.IndexOfAny(['"', '\r', '\n']) >= 0)
+            throw new InvalidOperationException("Invalid Visual Studio editor name.");
+        return new OpenProjectFileTarget
+        {
+            PathFilter = filter,
+            Label = options.Label,
+            FilePath = path!,
+            Editor = string.IsNullOrWhiteSpace(editor) ? null : editor
+        };
+    }
+
+    public static RunProjectTarget? ResolveRunTarget(IEnumerable<RunProjectTarget> targets,
+        string? solutionPath, DeckActionSettings? options)
+    {
+        if (options?.RunProjectUseCustom != true)
+            return Match(targets, solutionPath);
+
+        string filter = NormalizeFilter(options.RunProjectPathFilter);
+        if (string.IsNullOrWhiteSpace(solutionPath) || !solutionPath.MatchesPattern(filter)) return null;
+        string? path = options.RunProjectPath?.Trim();
+        if (!IsValidRelativePath(path) ||
+            !path!.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Configure a valid solution-relative .csproj path for this key.");
+        string buildMode = options.RunProjectBuildMode ?? "Rebuild";
+        int timeout = options.RunProjectBuildTimeoutSeconds ?? 600;
+        if (!IsValidBuildMode(buildMode) || timeout is < 10 or > 3600)
+            throw new InvalidOperationException("Invalid build mode or timeout (10–3600 seconds).");
+        return new RunProjectTarget
+        {
+            PathFilter = filter,
+            Label = options.Label,
+            ProjectPath = path!,
+            BuildMode = buildMode,
+            SaveAll = options.RunProjectSaveAll ?? true,
+            Confirm = options.RunProjectConfirm ?? true,
+            BuildTimeoutSeconds = timeout
+        };
+    }
+
+    private static string NormalizeFilter(string? filter) =>
+        string.IsNullOrWhiteSpace(filter) ? "*" : filter.Trim();
+
     public static string ResolvePath(string solutionPath, string relativePath)
     {
         if (string.IsNullOrWhiteSpace(relativePath) || Path.IsPathRooted(relativePath))
@@ -25,6 +81,7 @@ public static class VisualStudioTargetResolver
         !string.IsNullOrWhiteSpace(value) && !Path.IsPathRooted(value) &&
         value.IndexOfAny(Path.GetInvalidPathChars()) < 0;
 
-    public static string Label(VisualStudioTargetSettings target, string fallback) =>
-        string.IsNullOrWhiteSpace(target.Label) ? fallback : target.Label;
+    public static string Label(VisualStudioTargetSettings? target, string fallback, DeckActionSettings? options = null) =>
+        !string.IsNullOrWhiteSpace(options?.Label) ? options!.Label! :
+        string.IsNullOrWhiteSpace(target?.Label) ? fallback : target!.Label!;
 }

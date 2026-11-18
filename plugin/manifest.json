@@ -106,6 +106,7 @@
       "Settings": {},
       "UserTitleEnabled": false,
       "SupportedInMultiActions": false,
+      "PropertyInspectorPath": "property-inspector.html",
       "Controllers": [
         "Keypad"
       ]
@@ -128,6 +129,7 @@
       "Settings": {},
       "UserTitleEnabled": false,
       "SupportedInMultiActions": false,
+      "PropertyInspectorPath": "property-inspector.html",
       "Controllers": [
         "Keypad"
       ]

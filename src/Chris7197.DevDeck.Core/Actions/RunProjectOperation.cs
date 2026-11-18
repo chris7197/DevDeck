@@ -11,31 +11,43 @@ public sealed class RunProjectOperation(DeckSettings settings, VisualStudioTarge
     public string CliUsage => "";
     public bool TryParseCliArguments(IReadOnlyList<string> args, out string? target) { target = null; return false; }
 
-    public Task<DevDeckButtonState> GetStateAsync(DeveloperContext? context, CancellationToken cancellationToken = default)
+    public Task<DevDeckButtonState> GetStateAsync(DeveloperContext? context, CancellationToken cancellationToken = default) =>
+        GetConfiguredStateAsync(context, null, cancellationToken);
+
+    public Task<DevDeckButtonState> GetConfiguredStateAsync(DeveloperContext? context, DeckActionSettings? options,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var target = VisualStudioTargetResolver.Match(settings.RunProjectTargets, context?.SolutionPath);
-        if (target is null)
-            return Task.FromResult(new DevDeckButtonState(Name, "Not configured", DeckStatus.Unavailable,
-                "No RunProjectTargets rule matches this solution.", IconName));
-        string label = VisualStudioTargetResolver.Label(target, "Run Project");
+        string label = VisualStudioTargetResolver.Label(null, "Run Project", options);
+        if (string.IsNullOrWhiteSpace(context?.SolutionPath))
+            return Task.FromResult(new DevDeckButtonState(label, "Focus VS", DeckStatus.Unavailable,
+                "Focus Visual Studio with an open solution.", IconName));
         try
         {
-            string path = VisualStudioTargetResolver.ResolvePath(context!.RequireSolutionPath(), target.ProjectPath);
+            var target = VisualStudioTargetResolver.ResolveRunTarget(settings.RunProjectTargets, context.SolutionPath, options);
+            if (target is null)
+                return Task.FromResult(new DevDeckButtonState(label, options?.RunProjectUseCustom == true ? "Wrong solution" : "Not configured",
+                    DeckStatus.Unavailable, "No target matches this solution.", IconName));
+            label = VisualStudioTargetResolver.Label(target, "Run Project", options);
+            string path = VisualStudioTargetResolver.ResolvePath(context.RequireSolutionPath(), target.ProjectPath);
             return Task.FromResult(new DevDeckButtonState(label, "Ready", DeckStatus.Neutral,
                 $"{target.BuildMode} and debug {path}.", IconName));
         }
-        catch (Exception ex) when (ex is IOException or ArgumentException or InvalidOperationException or NotSupportedException)
+        catch (FileNotFoundException ex)
         {
             return Task.FromResult(new DevDeckButtonState(label, "Project missing", DeckStatus.Unavailable, ex.Message, IconName));
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            return Task.FromResult(new DevDeckButtonState(label, "Check settings", DeckStatus.Unavailable, ex.Message, IconName));
         }
     }
 
     public async Task<DevDeckOperationResult> ExecuteAsync(DevDeckOperationContext context)
     {
         string solution = context.Developer.RequireSolutionPath();
-        var target = VisualStudioTargetResolver.Match(settings.RunProjectTargets, solution);
-        if (target is null) return new(false, $"No RunProjectTargets rule matches '{solution}'.");
+        var target = VisualStudioTargetResolver.ResolveRunTarget(settings.RunProjectTargets, solution, context.ActionSettings);
+        if (target is null) return new(false, $"No configured target matches '{solution}'.");
         string path = VisualStudioTargetResolver.ResolvePath(solution, target.ProjectPath);
         CancellationToken ct = context.CancellationToken;
         // Verify the exact running instance before prompting; a simulator may be pinned to a file only.
