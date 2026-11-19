@@ -1,17 +1,11 @@
 using System.Diagnostics;
-using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace chris7197.DevDeck.Core;
 
-/// <summary>
-/// Formats the saved active C# file with CSharpier. Verifies a real disk change instead of
-/// equating process exit code zero with "file formatted". The VS editor may need to reload
-/// external changes; never overwrite an unsaved editor buffer.
-/// </summary>
-public sealed class FormatCSharpOperation(VisualStudioDocumentService documents, DeckLog? diagnostics = null) : IDevDeckOperation
+/// <summary>Format one saved, active C# source file using the bundled standalone PowerShell wrapper.</summary>
+public sealed class FormatCSharpOperation(VisualStudioDocumentService documents, DeckSettings? settings = null) : IDevDeckOperation
 {
-    private readonly DeckLog _log = diagnostics ?? new DeckLog();
-
     public string Name => "Format C# File";
     public string PluginActionId => "com.chris7197.devdeck.csharpier.format";
     public string? IconName => DevDeckIcons.FormatCSharp;
@@ -40,14 +34,7 @@ public sealed class FormatCSharpOperation(VisualStudioDocumentService documents,
         if (!File.Exists(script))
             return new(false, $"Bundled CSharpier script is missing: {script}. Publish DevDeck again.");
 
-        string filename = Path.GetFileName(active.FilePath);
-        // A timestamp alone is not reliable: tools may rewrite a file with the same bytes,
-        // and two writes can share a coarse filesystem timestamp.
-        byte[] beforeHash = await HashAsync(active.FilePath, context.CancellationToken);
-        var stopwatch = Stopwatch.StartNew();
-        _log.WriteTrace($"C# format: starting pid={pid}, file={filename}, saved=true.");
-        await context.ProgressAsync($"Formatting {filename}...");
-
+        await context.ProgressAsync($"Formatting {Path.GetFileName(active.FilePath)}...");
         var info = new ProcessStartInfo("powershell.exe")
         {
             WorkingDirectory = Path.GetDirectoryName(active.FilePath)!,
@@ -59,6 +46,8 @@ public sealed class FormatCSharpOperation(VisualStudioDocumentService documents,
         foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
                      "-File", script, "-Path", active.FilePath })
             info.ArgumentList.Add(argument);
+        CSharpFormattingSettings? formatting = settings?.CSharpFormatting;
+        if (formatting?.IsEnabled == true) info.ArgumentList.Add("-NoCache");
 
         using Process process = Process.Start(info) ?? throw new InvalidOperationException("Unable to start PowerShell.");
         Task<string> stdout = process.StandardOutput.ReadToEndAsync(context.CancellationToken);
@@ -71,53 +60,31 @@ public sealed class FormatCSharpOperation(VisualStudioDocumentService documents,
         {
             try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
             catch (InvalidOperationException) { }
-            _log.WriteTrace($"C# format: aborted after {stopwatch.ElapsedMilliseconds}ms.");
             throw;
         }
-
-        string output = await stdout;
-        string error = await stderr;
-        _log.WriteTrace($"C# format: formatter exit={process.ExitCode}, stdoutChars={output.Length}, " +
-            $"stderrChars={error.Length}, elapsedMs={stopwatch.ElapsedMilliseconds}.");
-        // Log only our own wrapper's provenance lines, not arbitrary formatter output
-        // (which could include source code or private paths in an error message).
-        foreach (string line in output.Split('\n'))
-        {
-            string detail = line.Trim();
-            if (detail.StartsWith("Configuration: ", StringComparison.Ordinal) ||
-                detail.StartsWith("Invocation: ", StringComparison.Ordinal))
-                _log.WriteTrace("C# format: " + detail);
-        }
+        string message = string.Join(" ", new[] { await stdout, await stderr }
+            .Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
         if (process.ExitCode != 0)
+            return new(false, $"CSharpier failed (exit {process.ExitCode}): {message}");
+        string formatter = "CSharpier";
+        if (formatting is { IsEnabled: true })
         {
-            string details = string.Join(" ", new[] { output, error }
-                .Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
-            if (details.Length > 1500) details = details[..1500] + "...";
-            return new(false, $"CSharpier failed (exit {process.ExitCode}): {details}");
+            // An ignored or generated file can produce exit 0 without being processed.
+            // With cache disabled, require the normal single-file success summary.
+            if (!Regex.IsMatch(message, @"\bFormatted\s+1\s+files?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+                return new(false, $"CSharpier did not confirm formatting this file; DevDeck rules were not applied. {message}");
+            await context.ProgressAsync("Applying DevDeck C# formatting rules...");
+            try
+            {
+                bool changed = await CSharpFormattedFile.ApplyAsync(active.FilePath, formatting, context.CancellationToken);
+                formatter += changed ? " and DevDeck formatting rules" : " (DevDeck rules: no additional changes)";
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                return new(false, $"CSharpier completed, but DevDeck's additional formatting failed: {ex.Message}");
+            }
         }
-
-        if (!File.Exists(active.FilePath))
-            return new(false, $"CSharpier exited successfully but {filename} no longer exists.");
-        byte[] afterHash = await HashAsync(active.FilePath, context.CancellationToken);
-        if (CryptographicOperations.FixedTimeEquals(beforeHash, afterHash))
-        {
-            _log.WriteTrace($"C# format: NO disk change for {filename}; already formatted, ignored, " +
-                "or CSharpier did not write the file.");
-            return new(true,
-                $"No changes to {filename}. It may already match CSharpier's style, or be excluded by an ignore rule. " +
-                "Check the DevDeck tray log for details.", NoChanges: true);
-        }
-
-        _log.WriteTrace($"C# format: verified disk content changed for {filename} " +
-            $"in {stopwatch.ElapsedMilliseconds}ms; Visual Studio reload is outside this operation.");
-        return new(true, $"CSharpier changed {filename} on disk. If the editor still looks unchanged, " +
-            "enable Visual Studio > Tools > Options > Environment > Documents > " +
-            "Reload modified files unless there are unsaved changes.");
-    }
-
-    private static async Task<byte[]> HashAsync(string path, CancellationToken cancellationToken)
-    {
-        await using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        return await SHA256.HashDataAsync(stream, cancellationToken);
+        return new(true, $"Formatted {Path.GetFileName(active.FilePath)} with {formatter}. " +
+            "If Visual Studio prompts about an external file change, reload the file to see it.");
     }
 }

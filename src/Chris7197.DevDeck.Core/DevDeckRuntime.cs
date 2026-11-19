@@ -67,7 +67,7 @@ public sealed class DevDeckRuntime
                 new CloseOtherVisualStudioTabsOperation(VisualStudioCom),
                 new ShortcutOperation(CloseOtherTabsOperation.OldSsmsActionId, "Close Others",
                     "CTRL+ALT+SHIFT+W", DevDeckIcons.CloseOthers, "SqlServer", Profiles, foreground)),
-            new FormatCSharpOperation(documents),
+            new FormatCSharpOperation(documents, settings),
             new FormatSqlOperation(foreground, visualStudio, VisualStudioCom,
                 new chris7197SqlFormatter(), settings, log),
             new OpenSolutionOperation(visualStudio),
@@ -92,9 +92,9 @@ public sealed class DevDeckRuntime
             actionsById[CloseOtherTabsOperation.ActionId];
         _byActionId = actionsById;
         foreach (var profile in settings.Profiles)
-        foreach (string? actionId in profile.Value)
-            if (!string.IsNullOrWhiteSpace(actionId) && !_byActionId.ContainsKey(actionId))
-                throw new InvalidOperationException($"Profile '{profile.Key}' references unknown action: {actionId}");
+            foreach (string? actionId in profile.Value)
+                if (!string.IsNullOrWhiteSpace(actionId) && !_byActionId.ContainsKey(actionId))
+                    throw new InvalidOperationException($"Profile '{profile.Key}' references unknown action: {actionId}");
     }
 
     public static DevDeckRuntime Create(string baseDirectory, DeckLog? log = null,

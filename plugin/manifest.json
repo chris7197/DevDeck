@@ -660,6 +660,51 @@
         "Keypad"
       ],
       "PropertyInspectorPath": "property-inspector.html"
+    },
+    {
+       "UUID": "com.chris7197.devdeck.projectdevcmd",
+       "Icon": "images/project-devcmd-action.png",
+       "Name": "Project Developer PowerShell",
+       "Tooltip": "Open Visual Studio integrated Developer PowerShell in the project containing the active file. Set Developer PowerShell as the Visual Studio default terminal profile.",
+       "States": [
+         {
+           "Image": "images/project-devcmd-key.png",
+           "Title": "Dev\nPS",
+           "FontSize": "13",
+           "FontStyle": "Bold",
+           "TitleAlignment": "bottom",
+           "TitleColor": "#FFFFFF"
+         }
+       ],
+       "Settings": {},
+       "UserTitleEnabled": false,
+       "SupportedInMultiActions": false,
+       "Controllers": [
+         "Keypad"
+       ]
+     },
+	{
+      "UUID": "com.chris7197.devdeck.perfmon.toggle",
+      "Icon": "images/perfmon-action.png",
+      "Name": "Toggle PerfMon Logging",
+      "Tooltip": "Start or stop a configured Windows PerfMon Data Collector Set with live recording status.",
+      "States": [
+        {
+          "Image": "images/perfmon-key.png",
+          "Title": "PerfMon",
+          "FontSize": "13",
+          "FontStyle": "Bold",
+          "TitleAlignment": "bottom",
+          "TitleColor": "#FFFFFF"
+        }
+      ],
+      "Settings": {},
+      "PropertyInspectorPath": "property-inspector.html",
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ]
     }
   ],
   "Version": "1.7.0",

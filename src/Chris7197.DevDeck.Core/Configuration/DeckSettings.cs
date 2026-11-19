@@ -6,6 +6,7 @@ public sealed class DeckSettings
 {
     public TeamsAuthSettings Teams { get; set; } = new();
     public SqlFormattingSettings SqlFormatting { get; set; } = new();
+    public CSharpFormattingSettings CSharpFormatting { get; set; } = new();
     public Dictionary<string, string> InvestigationSqlLookups { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<OpenProjectFileTarget> OpenProjectFileTargets { get; set; } = [];
     public List<RunProjectTarget> RunProjectTargets { get; set; } = [];
@@ -93,6 +94,9 @@ public sealed class DeckSettings
 
         settings.ButtonPresets = new Dictionary<string, DeckActionSettings>(
             settings.ButtonPresets ?? new(), StringComparer.OrdinalIgnoreCase);
+        if (settings.CSharpFormatting is null)
+            throw new InvalidOperationException("Invalid CSharpFormatting settings.");
+        settings.CSharpFormatting.Validate();
         if (settings.SqlFormatting is null)
             throw new InvalidOperationException("Invalid SqlFormatting settings.");
         if (settings.Teams is null || settings.Teams.PollSeconds is < 15 or > 3600 ||
