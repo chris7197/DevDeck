@@ -26,7 +26,7 @@ public sealed class NewMigrationService(MigrationProjectResolver resolver, DeckL
             if (File.Exists(file)) continue;
             string ns = project.RootNamespace + "._" + string.Join("._", segments);
             return new MigrationPreview(project.ProjectFile, file, ns,
-                long.Parse(moment.ToString("yyyyMMddHHmm", System.Globalization.CultureInfo.InvariantCulture)), project.OpenAtLine, project.OpenAtOffset);
+                long.Parse(moment.ToString("yyyyMMddHHmm", System.Globalization.CultureInfo.InvariantCulture)), project.OpenAtLine, project.OpenAtOffset, project.ExtraUsings);
         }
         throw new IOException("Could not find an unused minute for a migration.");
     }
@@ -35,7 +35,7 @@ public sealed class NewMigrationService(MigrationProjectResolver resolver, DeckL
     {
         MigrationPreview preview = Preview(solutionPath);
         Directory.CreateDirectory(Path.GetDirectoryName(preview.MigrationFile)!);
-        var extraUsings = string.IsNullOrEmpty(preview.ExtraUsings) ? "" : preview.ExtraUsings + Environment.NewLine;
+        string extraUsings = string.IsNullOrWhiteSpace(preview.ExtraUsings) ? string.Empty : preview.ExtraUsings.Trim() + Environment.NewLine;
         string source = $@"{extraUsings}using FluentMigrator;
 using System;
 
